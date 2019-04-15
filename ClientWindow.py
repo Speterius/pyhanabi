@@ -5,7 +5,7 @@ from settings import *
 
 
 class NameTab:
-    def __init__(self, center_x, center_y, user_id, width=140, height=26, text='DefaultText'):
+    def __init__(self, center_x, center_y, user_id, width=NAME_WIDTH, height=NAME_HEIGHT, text='DefaultText'):
         self.font = 20
         self.text = text
 
@@ -33,7 +33,7 @@ class NameTab:
 
 class ClientWindow(arcade.Window):
     def __init__(self):
-        super().__init__(width=SCREEN_WIDTH, height=SCREEN_HEIGHT)
+        super().__init__(width=SCREEN_WIDTH, height=SCREEN_HEIGHT, title=SCREEN_TITLE)
         arcade.set_background_color(arcade.color.AMAZON)
 
         self.shapes = arcade.ShapeElementList()
@@ -41,9 +41,13 @@ class ClientWindow(arcade.Window):
         self.game_state = GameState(user_count=0, users=[], started=False, current_turn=None)
         self.user = None
 
+        self.center_x = int(SCREEN_WIDTH/2)
+        self.center_y = int(SCREEN_HEIGHT/2)
+        self.third_line_y = int(2*SCREEN_HEIGHT/3)
+
         # Gradient Background:
         color1 = (26, 15, 35)
-        color2 = (65, 39, 63)
+        color2 = (75, 39, 83)
         points = (0, 0), (SCREEN_WIDTH, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), (0, SCREEN_HEIGHT)
         colors = (color1, color1, color2, color2)
         rect = arcade.create_rectangle_filled_with_colors(points, colors)
@@ -51,10 +55,10 @@ class ClientWindow(arcade.Window):
 
         # PlayerNames:
         self.name_tabs = []
-        self.name_loc = {'bot': (400, 15),
-                         'left': (110, 480),
-                         'top': (400, 580),
-                         'right': (730, 480)}
+        self.name_loc = {'bot': (self.center_x, int(NAME_HEIGHT/2)),
+                         'left': (int(NAME_WIDTH/2), self.third_line_y),
+                         'top': (self.center_x, int(SCREEN_HEIGHT-NAME_HEIGHT/2)),
+                         'right': (int(SCREEN_WIDTH-NAME_WIDTH/2), self.third_line_y)}
 
         # Buttons:
         self.info_btn = TextButton(center_x=SCREEN_WIDTH - BUTTON_WIDTH / 2 - MARGIN,
@@ -99,12 +103,15 @@ class ClientWindow(arcade.Window):
 
         if self.game_state.user_count < 4 and not self.game_state.started:
             arcade.draw_text(f'Waiting for players...{self.game_state.user_count}/4',
-                             SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.WHITE, 12)
+                             SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.WHITE, 12,
+                             align="center", anchor_x='center', anchor_y='center')
 
     def update_game_state(self, GS):
+        # If the user numbers don't match -> update the name tabs.
         if len(self.game_state.users) != len(GS.users):
             self.update_name_tabs(GS)
 
+        # If we are already playing -> Highlight the player whose turn it is.
         if GS.started:
             for n in self.name_tabs:
                 if n.user_id == GS.current_turn.user_id:
@@ -112,21 +119,24 @@ class ClientWindow(arcade.Window):
                 else:
                     n.set_color(n.default_color)
 
+        # Set the game state to what it is
         self.game_state = GS
+
+    # Generator method to loop along a list with a different starting point.
+    @staticmethod
+    def starting_with(lst, start):
+        for idx in range(len(lst)):
+            yield lst[(idx + start) % len(lst)]
 
     def update_name_tabs(self, GS):
         self.name_tabs = []
-        i = 1
-        for u in GS.users:
-            if u == self.user:
-                x = self.name_loc['bot'][0]
-                y = self.name_loc['bot'][1]
-                nametab = NameTab(x, y, user_id=u.user_id, text=u.name)
-            else:
-                x = list(self.name_loc.items())[i][1][0]
-                y = list(self.name_loc.items())[i][1][1]
-                nametab = NameTab(x, y, user_id=u.user_id, text=u.name)
-                i += 1
+        # Always start drawing name tabs with the client's username in the bottom:
+        i = 0
+        for u in self.starting_with(GS.users, GS.users.index(self.user)):
+            x = list(self.name_loc.items())[i][1][0]
+            y = list(self.name_loc.items())[i][1][1]
+            nametab = NameTab(x, y, user_id=u.user_id, text=u.name)
+            i += 1
 
             self.name_tabs.append(nametab)
 

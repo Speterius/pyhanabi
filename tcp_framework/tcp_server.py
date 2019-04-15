@@ -33,33 +33,34 @@ class Server:
 
         pass
 
-    def main(self):
-        # Accept connections until we have 4:
+    def accept_connections(self):
         while len(self.users) < self.max_users:
-            print("Server waiting for new connections...")
+            print(f"Waiting for connections...{len(self.users)}/{self.max_users}]")
             self.s.listen()
             client_socket, client_address = self.s.accept()
 
             print('>>>> Connection attempt by:', client_address)
-            print('>>>> Waiting for user data...')
-
             data = self.receive_message(client_socket)
 
             if type(data) == ConnectionAttempt:
                 new_user = User(client_address[0], client_address[1], data.user_name, data.user_id)
                 self.client_sockets.append(client_socket)
                 self.users.append(new_user)
-                print(f"New User: {new_user} added.")
+                print(f">>>> >>>> New User: {new_user.name} added.")
                 c = ConnectionState(confirmed_user=True, user_data=new_user)
                 client_socket.send(pickle.dumps(c))
-                print('Sent the confirmation.')
 
             self.GS.users = self.users
             self.GS.user_count = len(self.users)
             for c_s in self.client_sockets:
                 c_s.send(pickle.dumps(self.GS))
 
-        print("I have all 4 connections: Let's start the game")
+    def main(self):
+        # Accept connections until we have 4:
+        self.accept_connections()
+        print("Server has 4 players. Starting Game.")
+
+        # Initialize the game:
         self.GS.started = True
         turn = 0
         while self.running:

@@ -146,21 +146,6 @@ class GameState:
     def print_deck(self):
         pprint.pprint(self.deck.deck_state)
 
-    '''
-    def to_json(self):
-        d = dict(
-            info_points = self._info_points_left,
-            life_points = self._life_points_left,
-            player_hands = [asdict(p) for p in self.player_hands],
-            )
-        return json.dumps(d)
-
-    def from_json(self, data):
-        d = json.loads(data)
-        for i, p in enumerate(d['asd']):
-            self.player_hands[i] = PlayerHand(**p)
-    '''
-
     def print_player_hands(self):
         for p in self.player_hands:
             p.print_hand()
