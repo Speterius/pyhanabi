@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from socket import socket
+import typing
 
 
 @dataclass
@@ -26,8 +28,10 @@ class ConnectionState:
 
 @dataclass
 class GameState:
+    user_count: int
     users: list
     started: bool
+    current_turn: typing.Any
 
 
 @dataclass

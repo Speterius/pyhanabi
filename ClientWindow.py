@@ -5,7 +5,7 @@ from settings import *
 
 
 class NameTab:
-    def __init__(self, center_x, center_y, width=140, height=26, text='DefaultText'):
+    def __init__(self, center_x, center_y, user_id, width=140, height=26, text='DefaultText'):
         self.font = 20
         self.text = text
 
@@ -15,7 +15,13 @@ class NameTab:
         self.x = center_x
         self.y = center_y
 
+        self.default_color = (255, 184, 140)
         self.color = (255, 184, 140)
+
+        self.user_id = user_id
+
+    def set_color(self, color):
+        self.color = color
 
     def draw(self):
         arcade.draw_rectangle_filled(self.x, self.y, self.width, self.height, self.color)
@@ -32,7 +38,7 @@ class ClientWindow(arcade.Window):
 
         self.shapes = arcade.ShapeElementList()
 
-        self.game_state = GameState(users=[], started=False)
+        self.game_state = GameState(user_count=0, users=[], started=False, current_turn=None)
         self.user = None
 
         # Gradient Background:
@@ -45,10 +51,10 @@ class ClientWindow(arcade.Window):
 
         # PlayerNames:
         self.name_tabs = []
-        self.name_loc = {'bot': (SCREEN_WIDTH / 2, 15),
-                         'left': (70, 4 * SCREEN_HEIGHT / 5),
-                         'top': (SCREEN_WIDTH / 2, SCREEN_HEIGHT - 15),
-                         'right': (SCREEN_WIDTH - 70, 4 * SCREEN_HEIGHT / 5)}
+        self.name_loc = {'bot': (400, 15),
+                         'left': (110, 480),
+                         'top': (400, 580),
+                         'right': (730, 480)}
 
         # Buttons:
         self.info_btn = TextButton(center_x=SCREEN_WIDTH - BUTTON_WIDTH / 2 - MARGIN,
@@ -91,9 +97,20 @@ class ClientWindow(arcade.Window):
         for b in self.buttons:
             b.draw()
 
+        if self.game_state.user_count < 4 and not self.game_state.started:
+            arcade.draw_text(f'Waiting for players...{self.game_state.user_count}/4',
+                             SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.WHITE, 12)
+
     def update_game_state(self, GS):
         if len(self.game_state.users) != len(GS.users):
             self.update_name_tabs(GS)
+
+        if GS.started:
+            for n in self.name_tabs:
+                if n.user_id == GS.current_turn.user_id:
+                    n.set_color(arcade.color.ALICE_BLUE)
+                else:
+                    n.set_color(n.default_color)
 
         self.game_state = GS
 
@@ -104,12 +121,11 @@ class ClientWindow(arcade.Window):
             if u == self.user:
                 x = self.name_loc['bot'][0]
                 y = self.name_loc['bot'][1]
-                nametab = NameTab(x, y, text=u.name)
+                nametab = NameTab(x, y, user_id=u.user_id, text=u.name)
             else:
                 x = list(self.name_loc.items())[i][1][0]
                 y = list(self.name_loc.items())[i][1][1]
-                # print(f'Now making name tab here: {x}, {y}')
-                nametab = NameTab(x, y, u.name)
+                nametab = NameTab(x, y, user_id=u.user_id, text=u.name)
                 i += 1
 
             self.name_tabs.append(nametab)
