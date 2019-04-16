@@ -53,7 +53,7 @@ class Server:
     def accept_connections(self):
         while len(self.users) < self.max_users:
             print(f"Waiting for connections...{len(self.users)}/{self.max_users}")
-            self.s.listen()
+            self.s.listen(4)
             client_sock_rec, client_address = self.s.accept()
             client_sock_push, _ = self.s.accept()
             print('>>>> Connection attempt by:', client_address)

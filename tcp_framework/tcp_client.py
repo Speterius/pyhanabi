@@ -1,17 +1,18 @@
 import pickle
 import socket
-import random
-import threading
+from random import randint, choice
+from threading import Thread
 import arcade
-from data_packets import ConnectionAttempt, User, ConnectionState, GameState, PlayerEvent
+from data_packets import ConnectionAttempt, ConnectionState, GameState
 from ClientWindow import ClientWindow
-import time
-import string
+from time import sleep
+from string import ascii_letters
+
 
 class Client:
     def __init__(self, user_name='Player123'):
         self.name = user_name
-        self.user_id = random.randint(1, 10000)
+        self.user_id = randint(1, 10000)
         self.server_address = ('localhost', 10000)
 
         self.BUFFERSIZE = 8192
@@ -67,7 +68,7 @@ class Client:
             PE = window.get_player_event()
             self.send_message(PE)
             window.reset_player_event()
-            time.sleep(1./self.PLAYER_EVENT_UPDATE_F)
+            sleep(1./self.PLAYER_EVENT_UPDATE_F)
 
 
 def main():
@@ -79,15 +80,15 @@ def main():
         while len(name) > 8:
             name = input('Enter username (max 10 letters): >')
     else:
-        name = ''.join(random.choice(string.ascii_letters) for _ in range(9))
+        name = ''.join(choice(ascii_letters) for _ in range(9))
 
     client = Client(user_name=name)
     window = ClientWindow()
     client.connect_to_server(window)
 
     # Receive from server on a separate thread:
-    thread_recieve = threading.Thread(target=client.receive_updates, args=(window,), daemon=True)
-    thread_send = threading.Thread(target=client.send_player_events, args=(window,), daemon=True)
+    thread_recieve = Thread(target=client.receive_updates, args=(window,), daemon=True)
+    thread_send = Thread(target=client.send_player_events, args=(window,), daemon=True)
 
     thread_recieve.start()
     thread_send.start()
