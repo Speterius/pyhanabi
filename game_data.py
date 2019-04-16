@@ -49,6 +49,7 @@ class Deck:
 
         # Printable form of cards list:
         self.deck_state = {}
+        self.update_state()
 
     def update_state(self):
         for col in self.colors:
@@ -72,8 +73,8 @@ class Deck:
 
 
 class PlayerHand:
-    def __init__(self, deck, ID):
-        self.ID = ID
+    def __init__(self, deck, user_id):
+        self.user_id = user_id
         self.card_1 = deck.pull_card()
         self.card_2 = deck.pull_card()
         self.card_3 = deck.pull_card()
@@ -106,7 +107,7 @@ class GameState:
         assert 2 <= n_players <= 4
 
         for i in range(n_players):
-            self.player_hands.append(PlayerHand(self.deck, ID=i))
+            self.player_hands.append(PlayerHand(self.deck, user_id=i))
 
         self._info_points_left: int = 9
         self._life_points_left: int = 3

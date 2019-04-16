@@ -1,44 +1,17 @@
 import arcade
 from data_packets import ConnectionAttempt, User, ConnectionState, GameState, PlayerEvent
-from buttons import TextButton
+from gui_elements import NameTab, TextButton
 from settings import *
 
 
-class NameTab:
-    def __init__(self, center_x, center_y, user_id, width=NAME_WIDTH, height=NAME_HEIGHT, text='DefaultText'):
-        self.font = 20
-        self.text = text
-
-        self.width = width
-        self.height = height
-
-        self.x = center_x
-        self.y = center_y
-
-        self.default_color = (255, 184, 140)
-        self.color = (255, 184, 140)
-
-        self.user_id = user_id
-
-    def set_color(self, color):
-        self.color = color
-
-    def draw(self):
-        arcade.draw_rectangle_filled(self.x, self.y, self.width, self.height, self.color)
-
-        arcade.draw_text(self.text, self.x, self.y,
-                         arcade.color.BLACK, font_size=self.font,
-                         width=self.width, align="center", anchor_x="center", anchor_y="center")
-
-
-class ClientWindow(arcade.Window):
+class GameWindow(arcade.Window):
     def __init__(self):
         super().__init__(width=SCREEN_WIDTH, height=SCREEN_HEIGHT, title=SCREEN_TITLE)
         arcade.set_background_color(arcade.color.AMAZON)
 
         self.shapes = arcade.ShapeElementList()
 
-        self.game_state = GameState(user_count=0, users=[], started=False, current_turn=None)
+        self.game_state = None
         self.user = None
 
         self.center_x = int(SCREEN_WIDTH/2)
@@ -87,6 +60,9 @@ class ClientWindow(arcade.Window):
         # Player Events
         self.PE = PlayerEvent(False, False, False, False)
 
+        # Cards:
+        self.cards = []
+
     def get_player_event(self):
         return self.PE
 
@@ -95,6 +71,7 @@ class ClientWindow(arcade.Window):
 
     def info_btn_click(self):
         self.PE.info = True
+        self.PE.next_turn = True
 
     def burn_btn_click(self):
         self.PE.burn = True
@@ -110,13 +87,19 @@ class ClientWindow(arcade.Window):
         for b in self.buttons:
             b.draw()
 
-        if self.game_state.user_count < 4 and not self.game_state.started:
-            arcade.draw_text(f'Waiting for players...{self.game_state.user_count}/4',
-                             SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.WHITE, 12,
-                             align="center", anchor_x='center', anchor_y='center')
+        if self.game_state is not None:
+            if self.game_state.user_count < MAX_USERS and not self.game_state.started:
+                arcade.draw_text(f'Waiting for players...{self.game_state.user_count}/{MAX_USERS}',
+                                 SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.WHITE, 12,
+                                 align="center", anchor_x='center', anchor_y='center')
 
     def update_game_state(self, GS):
         # If the user numbers don't match -> update the name tabs.
+        if self.game_state is None:
+            self.game_state = GS
+            self.update_name_tabs(GS)
+            return
+
         if len(self.game_state.users) != len(GS.users):
             self.update_name_tabs(GS)
 
@@ -124,9 +107,10 @@ class ClientWindow(arcade.Window):
         if GS.started:
             for n in self.name_tabs:
                 if n.user_id == GS.current_turn.user_id:
+                    n.set_highlight(True)
                     n.set_color(arcade.color.ALICE_BLUE)
                 else:
-                    n.set_color(n.default_color)
+                    n.set_highlight(False)
 
         # Set the game state to what it is
         self.game_state = GS

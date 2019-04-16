@@ -4,9 +4,10 @@ from random import randint, choice
 from threading import Thread
 import arcade
 from data_packets import ConnectionAttempt, ConnectionState, GameState
-from ClientWindow import ClientWindow
+from ClientWindow import GameWindow
 from time import sleep
 from string import ascii_letters
+from game_data import Card
 
 
 class Client:
@@ -36,6 +37,7 @@ class Client:
 
     def connect_to_server(self, window):
         # Connect and send data:
+        print(f'>>>> Attempting connection with player name: {self.name}...')
         self.sock_rec.connect(self.server_address)
         self.sock_push.connect(self.server_address)
 
@@ -44,13 +46,13 @@ class Client:
 
         # Wait for confirmation:
         data = self.receive_message()
-        print(data)
         # If we get good confirmation: become connected
         if type(data) == ConnectionState:
             if data.confirmed_user:
                 self.connected = True
                 self.user_data = data.user_data
                 window.update_user_data(data.user_data)
+                print('>>>> Connection to server successful.')
             else:
                 print('I am not confirmed.')
         else:
@@ -83,7 +85,7 @@ def main():
         name = ''.join(choice(ascii_letters) for _ in range(9))
 
     client = Client(user_name=name)
-    window = ClientWindow()
+    window = GameWindow()
     client.connect_to_server(window)
 
     # Receive from server on a separate thread:

@@ -1,7 +1,12 @@
 import socket
 import pickle
+from time import sleep
+from settings import *
+
 from data_packets import ConnectionAttempt, ConnectionState, User, GameState, PlayerEvent
 import threading
+
+from game_data import Deck
 
 PORT = 10000
 BUFFERSIZE = 4096
@@ -9,7 +14,8 @@ BUFFERSIZE = 4096
 
 class Server:
     def __init__(self):
-        self.max_users = 4
+        self.UPDATE_RATE = 10   # Hz
+        self.max_users = MAX_USERS
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.address = ('localhost', PORT)
         self.s.bind(self.address)
@@ -22,7 +28,9 @@ class Server:
 
         self.listening_to = None
 
-        self.GS = GameState(len(self.users), self.users, started=False, current_turn=None)
+        self.GS = GameState(len(self.users), self.users, started=False, current_turn=None, player_cards={})
+
+        self.turn = 0  # Turn index loops through users.
 
     @staticmethod
     def receive_message(client_socket):
@@ -35,8 +43,17 @@ class Server:
             return False
 
     def update_game_state(self, player_event):
+        # Set the next player to be their turn:
+        if player_event.next_turn:
+            self.turn += 1
+            if self.turn >= len(self.users):
+                self.turn = 0
 
-        pass
+            self.GS.current_turn = self.users[self.turn]  # Set current player in the GameState
+            self.listening_to = self.client_sockets_push[self.turn]  # The socket to receive player updates from
+
+        # Card logic
+        # (...)
 
     def receive_player_events(self):
         while True:
@@ -49,6 +66,7 @@ class Server:
                         print('place')
                     elif data.burn:
                         print('burn')
+                    self.update_game_state(data)
 
     def accept_connections(self):
         while len(self.users) < self.max_users:
@@ -75,27 +93,26 @@ class Server:
 
     def run(self):
         # Accept connections until we have 4:
-        print("Server has 4 players. Starting Game.")
+        print(f"Server has {self.max_users} players. Starting Game...")
 
         # Initialize the game:
         self.GS.started = True
-        turn = 0
-        while self.running:
-            self.GS.current_turn = self.users[turn]             # Set current player in the GameState
-            self.listening_to = self.client_sockets_push[turn]  # The socket to receive player updates from
 
+        # Make Deck of cards:
+        deck = Deck()
+        player_cards = {}
+
+        for u in self.users:
+            player_cards[u.user_id] = [deck.pull_card() for _ in range(4)]
+
+        self.GS.player_cards = player_cards
+        self.GS.current_turn = self.users[self.turn]
+        self.listening_to = self.client_sockets_push[self.turn]
+
+        while self.running:
             for c_s in self.client_sockets_rec:  # Let everyone know whose turn it is.
                 c_s.send(pickle.dumps(self.GS))
-
-            # Listen to the guy whose turn it is.
-            # data = self.receive_message(self.users[turn].client_socket)
-            input('Enter anything to move on >>')
-            # if data == PlayerEvent:
-            #    self.update_game_state(data)
-
-            turn += 1
-            if turn > 3:
-                turn = 0
+                sleep(1./self.UPDATE_RATE)
 
 
 def main():

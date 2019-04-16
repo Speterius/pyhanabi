@@ -1,5 +1,62 @@
 import arcade
 from settings import *
+from game_data import Card
+
+
+card_locations = {'bot': [(), (), (), ()],
+                  'left': [(), (), (), ()],
+                  'top': [(), (), (), ()],
+                  'right': [(), (), (), ()]}
+
+
+class CardTab(arcade.Sprite):
+    def __init__(self, card, loc, index):
+        super().__init__()
+        assert type(card) == Card
+        assert loc in ['bot', 'left', 'top', 'right']
+        assert 0 <= index <= MAX_USERS-1
+
+        self.card = card
+        self.color, self.N = self.card.get_card_data()
+        self.location = card_locations[loc][index]
+        self.x = self.location[0]
+        self.y = self.location[1]
+
+
+class NameTab:
+    def __init__(self, center_x, center_y, user_id, width=NAME_WIDTH, height=NAME_HEIGHT, text='DefaultText'):
+        self.font = 20
+        self.text = text
+
+        self.width = width
+        self.height = height
+
+        self.x = center_x
+        self.y = center_y
+
+        self.highlight_color = (204, 204, 250)
+        self.color = (255, 184, 140)
+
+        self.user_id = user_id
+        self.highlight = False
+
+    def set_color(self, color):
+        self.color = color
+
+    def draw(self):
+        if self.highlight:
+            arcade.draw_ellipse_outline(self.x, self.y, self.width/2+20, self.height + 20,
+                                        self.highlight_color, 2, num_segments=1024)
+            arcade.draw_rectangle_filled(self.x, self.y, self.width, self.height, self.highlight_color)
+        else:
+            arcade.draw_rectangle_filled(self.x, self.y, self.width, self.height, self.color)
+
+        arcade.draw_text(self.text, self.x, self.y,
+                         arcade.color.BLACK, font_size=self.font,
+                         width=self.width, align="center", anchor_x="center", anchor_y="center")
+
+    def set_highlight(self, should_highlight: bool):
+        self.highlight = should_highlight
 
 
 class TextButton:
