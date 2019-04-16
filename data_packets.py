@@ -40,3 +40,9 @@ class PlayerEvent:
     burn: bool
     place: bool
     pull: bool
+
+    def reset(self):
+        self.info = False
+        self.burn = False
+        self.place = False
+        self.pull = False

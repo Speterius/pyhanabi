@@ -84,14 +84,23 @@ class ClientWindow(arcade.Window):
                                     face_color=arcade.color.BLOND)
         self.buttons = [self.info_btn, self.burn_btn, self.place_btn]
 
-    def place_btn_click(self):
-        print('Place')
+        # Player Events
+        self.PE = PlayerEvent(False, False, False, False)
+
+    def get_player_event(self):
+        return self.PE
+
+    def reset_player_event(self):
+        self.PE.reset()
 
     def info_btn_click(self):
-        print('info')
+        self.PE.info = True
 
     def burn_btn_click(self):
-        print('burn')
+        self.PE.burn = True
+
+    def place_btn_click(self):
+        self.PE.place = True
 
     def on_draw(self):
         arcade.start_render()
