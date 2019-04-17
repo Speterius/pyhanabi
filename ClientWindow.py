@@ -108,7 +108,6 @@ class GameWindow(arcade.Window):
             for n in self.name_tabs:
                 if n.user_id == GS.current_turn.user_id:
                     n.set_highlight(True)
-                    n.set_color(arcade.color.ALICE_BLUE)
                 else:
                     n.set_highlight(False)
 
