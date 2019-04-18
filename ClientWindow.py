@@ -10,7 +10,7 @@ class GameWindow(arcade.Window):
         arcade.set_background_color(arcade.color.AMAZON)
 
         self.shapes = arcade.ShapeElementList()
-
+        self.connection = False
         self.game_state = None
         self.user = None
 
@@ -92,7 +92,12 @@ class GameWindow(arcade.Window):
         if self.game_state is not None:
             if self.game_state.user_count < MAX_USERS and not self.game_state.started:
                 arcade.draw_text(f'Waiting for players...{self.game_state.user_count}/{MAX_USERS}',
-                                 SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.WHITE, 12,
+                                 SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.WHITE, 14,
+                                 align="center", anchor_x='center', anchor_y='center')
+        else:
+            if not self.connection:
+                arcade.draw_text(f'Waiting for server connection...',
+                                 SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.WHITE, 14,
                                  align="center", anchor_x='center', anchor_y='center')
 
         if self.card_tab_list is not None:

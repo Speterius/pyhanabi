@@ -35,11 +35,27 @@ class Client:
         data = pickle.dumps(data)
         self.sock_push.sendall(data)
 
-    def connect_to_server(self, window):
+    def wait_for_server(self):
+        print('Server is not available. Waiting for server...')
+        waiting = True
+        while waiting:
+            try:
+                self.sock_rec.connect(self.server_address)
+                waiting = False
+            except:
+                pass
+                sleep(0.5)
+
+    def connect_to_server(self, window, thread_recieve, thread_send):
         # Connect and send data:
         print(f'>>>> Attempting connection with player name: {self.name}...')
-        self.sock_rec.connect(self.server_address)
-        self.sock_push.connect(self.server_address)
+
+        try:
+            self.sock_rec.connect(self.server_address)
+        except ConnectionRefusedError:
+            self.wait_for_server()
+        finally:
+            self.sock_push.connect(self.server_address)
 
         con_attempt = pickle.dumps(ConnectionAttempt(self.user_id, self.name))
         self.sock_rec.sendall(con_attempt)
@@ -52,7 +68,10 @@ class Client:
                 self.connected = True
                 self.user_data = data.user_data
                 window.update_user_data(data.user_data)
-                print('>>>> Connection to server successful.')
+                window.connection = True
+                print('>>>> Connection to server successful. Starting Threads:')
+                thread_recieve.start()
+                thread_send.start()
             else:
                 print('I am not confirmed.')
         else:
@@ -86,14 +105,14 @@ def main():
 
     client = Client(user_name=name)
     window = GameWindow()
-    client.connect_to_server(window)
+    # client.connect_to_server(window)
 
     # Receive from server on a separate thread:
     thread_recieve = Thread(target=client.receive_updates, args=(window,), daemon=True)
     thread_send = Thread(target=client.send_player_events, args=(window,), daemon=True)
+    thread_connect = Thread(target=client.connect_to_server, args=(window, thread_recieve, thread_send), daemon=True)
 
-    thread_recieve.start()
-    thread_send.start()
+    thread_connect.start()
 
     # Run the arcade GameEngine
     arcade.run()
