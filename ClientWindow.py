@@ -1,6 +1,6 @@
 import arcade
 from data_packets import ConnectionAttempt, User, ConnectionState, GameState, PlayerEvent
-from gui_elements import NameTab, TextButton
+from gui_elements import NameTab, TextButton, CardTab
 from settings import *
 
 
@@ -26,12 +26,13 @@ class GameWindow(arcade.Window):
         rect = arcade.create_rectangle_filled_with_colors(points, colors)
         self.shapes.append(rect)
 
-        # PlayerNames:
+        # Player Names and Locations:
         self.name_tabs = []
         self.name_loc = {'bot': (self.center_x, int(NAME_HEIGHT/2)),
                          'left': (int(NAME_WIDTH/2), self.third_line_y),
                          'top': (self.center_x, int(SCREEN_HEIGHT-NAME_HEIGHT/2)),
                          'right': (int(SCREEN_WIDTH-NAME_WIDTH/2), self.third_line_y)}
+        self.user_locations = {}
 
         # Buttons:
         self.info_btn = TextButton(center_x=SCREEN_WIDTH - BUTTON_WIDTH / 2 - MARGIN,
@@ -61,7 +62,8 @@ class GameWindow(arcade.Window):
         self.PE = PlayerEvent(False, False, False, False)
 
         # Cards:
-        self.cards = []
+        self.generated = False
+        self.card_tab_list = arcade.SpriteList()     # Card Tab Spritelist
 
     def get_player_event(self):
         return self.PE
@@ -93,6 +95,25 @@ class GameWindow(arcade.Window):
                                  SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.WHITE, 12,
                                  align="center", anchor_x='center', anchor_y='center')
 
+        if self.card_tab_list is not None:
+            self.card_tab_list.draw()
+
+    def generate_cards(self, GS):
+        for ID in list(GS.player_cards.keys()):
+            if self.user.user_id == ID:
+                self_card = True
+            else:
+                self_card = False
+
+            loc = self.user_locations[ID]
+            i = 0
+            for c in GS.player_cards[ID]:
+                card_tab = CardTab(card=c, loc=loc, index=i, self_card=self_card)
+                self.card_tab_list.append(card_tab)
+                i += 1
+
+        self.generated = True
+
     def update_game_state(self, GS):
         # If the user numbers don't match -> update the name tabs.
         if self.game_state is None:
@@ -111,6 +132,9 @@ class GameWindow(arcade.Window):
                 else:
                     n.set_highlight(False)
 
+        if GS.started and not self.generated:
+            self.generate_cards(GS)
+
         # Set the game state to what it is
         self.game_state = GS
 
@@ -125,11 +149,14 @@ class GameWindow(arcade.Window):
         # Always start drawing name tabs with the client's username in the bottom:
         i = 0
         for u in self.starting_with(GS.users, GS.users.index(self.user)):
-            x = list(self.name_loc.items())[i][1][0]
-            y = list(self.name_loc.items())[i][1][1]
+            location = list(self.name_loc.items())[i]
+            side = location[0]
+            coord = location[1]
+            x = coord[0]
+            y = coord[1]
             nametab = NameTab(x, y, user_id=u.user_id, text=u.name)
+            self.user_locations[u.user_id] = side
             i += 1
-
             self.name_tabs.append(nametab)
 
     def update_user_data(self, user):

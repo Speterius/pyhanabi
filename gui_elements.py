@@ -1,26 +1,33 @@
 import arcade
 from settings import *
 from game_data import Card
+import os
 
-
-card_locations = {'bot': [(), (), (), ()],
-                  'left': [(), (), (), ()],
-                  'top': [(), (), (), ()],
-                  'right': [(), (), (), ()]}
+parent_dir = os.path.abspath(os.path.dirname(__file__))
 
 
 class CardTab(arcade.Sprite):
-    def __init__(self, card, loc, index):
-        super().__init__()
+    def __init__(self, card, loc, index, self_card=False):
         assert type(card) == Card
         assert loc in ['bot', 'left', 'top', 'right']
-        assert 0 <= index <= MAX_USERS-1
+        assert 0 <= index <= 3
 
         self.card = card
-        self.color, self.N = self.card.get_card_data()
+        self.card_color, self.num = self.card.get_card_data()
         self.location = card_locations[loc][index]
+
         self.x = self.location[0]
         self.y = self.location[1]
+
+        print(self.x, self.y)
+
+        assets_path = os.path.join(parent_dir, 'assets')
+        if not self_card:
+            filename = f'{self.card_color}_{self.num}.png'
+        else:
+            filename = "question_mark.png"
+        filepath = os.path.join(assets_path, filename)
+        super().__init__(filename=filepath, scale=0.65, center_x=self.x, center_y=self.y)
 
 
 class NameTab:
