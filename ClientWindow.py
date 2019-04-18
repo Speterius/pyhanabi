@@ -2,7 +2,7 @@ import arcade
 from data_packets import ConnectionAttempt, User, ConnectionState, GameState, PlayerEvent
 from gui_elements import NameTab, TextButton, CardTab
 from settings import *
-
+from time import sleep
 
 class GameWindow(arcade.Window):
     def __init__(self):
@@ -16,7 +16,7 @@ class GameWindow(arcade.Window):
 
         self.center_x = int(SCREEN_WIDTH/2)
         self.center_y = int(SCREEN_HEIGHT/2)
-        self.third_line_y = int(2*SCREEN_HEIGHT/3)
+        self.third_line_y = int(2*SCREEN_HEIGHT/3)+50
 
         # Gradient Background:
         color1 = (26, 15, 35)
@@ -96,7 +96,14 @@ class GameWindow(arcade.Window):
                                  align="center", anchor_x='center', anchor_y='center')
 
         if self.card_tab_list is not None:
-            self.card_tab_list.draw()
+            try:
+                self.card_tab_list.draw()
+            except ValueError:
+                sleep(0.5)
+                try:
+                    self.card_tab_list.draw()
+                except:
+                    pass
 
     def generate_cards(self, GS):
         for ID in list(GS.player_cards.keys()):

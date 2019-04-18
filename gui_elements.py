@@ -6,6 +6,10 @@ import os
 parent_dir = os.path.abspath(os.path.dirname(__file__))
 
 
+def hex_to_rgb(h):
+    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+
+
 class CardTab(arcade.Sprite):
     def __init__(self, card, loc, index, self_card=False):
         assert type(card) == Card
@@ -18,8 +22,6 @@ class CardTab(arcade.Sprite):
 
         self.x = self.location[0]
         self.y = self.location[1]
-
-        print(self.x, self.y)
 
         assets_path = os.path.join(parent_dir, 'assets')
         if not self_card:
@@ -41,8 +43,8 @@ class NameTab:
         self.x = center_x
         self.y = center_y
 
-        self.highlight_color = (204, 204, 250)
-        self.color = (255, 184, 140)
+        self.highlight_color = hex_to_rgb('80d0c7')
+        self.color = hex_to_rgb('13547a')
 
         self.user_id = user_id
         self.highlight = False
@@ -52,8 +54,7 @@ class NameTab:
 
     def draw(self):
         if self.highlight:
-            arcade.draw_ellipse_outline(self.x, self.y, self.width/2+20, self.height + 20,
-                                        self.highlight_color, 2, num_segments=1024)
+            # arcade.draw_ellipse_outline(self.x, self.y, self.width/2+20, self.height + 20, self.highlight_color, 2, num_segments=1024)
             arcade.draw_rectangle_filled(self.x, self.y, self.width, self.height, self.highlight_color)
         else:
             arcade.draw_rectangle_filled(self.x, self.y, self.width, self.height, self.color)
