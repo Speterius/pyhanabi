@@ -53,19 +53,20 @@ class Server:
             self.listening_to = self.client_sockets_push[self.turn]  # The socket to receive player updates from
 
         # Card logic
-        # (...)
+        if player_event.info:
+            print('lost info point')
+            self.GS.lose_info()
+        elif player_event.place:
+            print(f'placed card: {player_event.card_placed}')
+        elif player_event.burn:
+            print(f'burned card: {player_event.card_burned}')
+            self.GS.add_info()
 
     def receive_player_events(self):
         while True:
             if self.listening_to is not None:
                 data = self.receive_message(self.listening_to)
                 if type(data) == PlayerEvent:
-                    if data.info:
-                        print('info')
-                    elif data.place:
-                        print('place')
-                    elif data.burn:
-                        print('burn')
                     self.update_game_state(data)
 
     def accept_connections(self):

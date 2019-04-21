@@ -2,6 +2,8 @@ import arcade
 from settings import *
 from game_data import Card
 import os
+from random import randint
+from arcade.draw_commands import load_texture
 
 parent_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -23,13 +25,67 @@ class CardTab(arcade.Sprite):
         self.x = self.location[0]
         self.y = self.location[1]
 
+        self.self_card = self_card
+        self.original_scale = 0.65
+
         assets_path = os.path.join(parent_dir, 'assets')
-        if not self_card:
-            filename = f'{self.card_color}_{self.num}.png'
-        else:
-            filename = "question_mark.png"
+        filename = f'{self.card_color}_{self.num}.png'
+        filename_question_mark = "question_mark.png"
         filepath = os.path.join(assets_path, filename)
-        super().__init__(filename=filepath, scale=0.65, center_x=self.x, center_y=self.y)
+
+        super().__init__(filename=filepath, scale=self.original_scale, center_x=self.x, center_y=self.y)
+        QM_texture = load_texture(os.path.join(assets_path, filename_question_mark))
+        self.append_texture(QM_texture)
+
+        if self_card:
+            self.set_texture(1)
+        else:
+            self.set_texture(0)
+
+        self.selected = False
+        self.currently_pressed = False
+
+    def place(self):
+        self.center_x = SCREEN_WIDTH/2
+        self.center_y = SCREEN_HEIGHT/2
+        self._set_scale(0.4)
+
+        self.self_card = False
+        self.set_texture(0)
+
+    def burn(self):
+        self.center_x = int(SCREEN_WIDTH*0.2) + randint(-10, 10)
+        self.center_y = int(SCREEN_HEIGHT*0.2) + randint(-10, 10)
+        self._set_scale(0.4)
+
+        self.self_card = False
+        self.set_texture(1)
+
+    def check_mouse_press(self, x, y):
+        if x > self.center_x + self.width / 2:
+            return False
+        if x < self.center_x - self.width / 2:
+            return False
+        if y > self.center_y + self.height / 2:
+            return False
+        if y < self.center_y - self.height / 2:
+            return False
+        return True
+
+    def delete_selection(self):
+        self._set_scale(self.original_scale)
+        self.selected = False
+
+    def on_press_down(self):
+        self.currently_pressed = True
+
+    def on_release_up(self):
+        self.currently_pressed = False
+        if not self.selected:
+            self.selected = True
+            self._set_scale(1.0)
+        else:
+            self.delete_selection()
 
 
 class NameTab:

@@ -33,6 +33,21 @@ class GameState:
     current_turn: typing.Any    # User() object of the current player to move.
     player_cards: dict          # Dict of PlayerHand objects. Keys are player IDs.
 
+    info_pnt: int = 7           # number of info points left
+    life: int = 3               # number of lives left
+
+    def lose_info(self):
+        self.info_pnt -= 1
+
+    def add_info(self):
+        self.info_pnt += 1
+
+    def lose_life(self):
+        self.life -= 1
+
+    def add_life(self):
+        self.life += 1
+
 
 @dataclass
 class PlayerEvent:
@@ -40,6 +55,10 @@ class PlayerEvent:
     burn: bool
     place: bool
     pull: bool
+
+    card_burned: typing.Any = None
+    card_placed: typing.Any = None
+
     next_turn: bool = False
 
     def reset(self):
@@ -48,3 +67,5 @@ class PlayerEvent:
         self.place = False
         self.pull = False
         self.next_turn = False
+        self.card_burned = None
+        self.card_placed = None

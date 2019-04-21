@@ -7,7 +7,7 @@ from data_packets import ConnectionAttempt, ConnectionState, GameState
 from ClientWindow import GameWindow
 from time import sleep
 from string import ascii_letters
-from game_data import Card
+import sys
 
 
 class Client:
@@ -26,14 +26,21 @@ class Client:
         self.user_data = 0
 
     def receive_message(self):
-        data, server = self.sock_rec.recvfrom(self.BUFFERSIZE)
-        if not len(data):
+        try:
+            data, server = self.sock_rec.recvfrom(self.BUFFERSIZE)
+            if not len(data):
+                return False
+            return pickle.loads(data)
+        except:
             return False
-        return pickle.loads(data)
 
     def send_message(self, data):
         data = pickle.dumps(data)
-        self.sock_push.sendall(data)
+        try:
+            self.sock_push.sendall(data)
+        except ConnectionResetError:
+            print('Server socket is down. Closing game.')
+            sys.exit()
 
     def wait_for_server(self):
         print('Server is not available. Waiting for server...')
@@ -44,7 +51,7 @@ class Client:
                 waiting = False
             except:
                 pass
-                sleep(0.5)
+                sleep(0.2)
 
     def connect_to_server(self, window, thread_recieve, thread_send):
         # Connect and send data:
@@ -80,8 +87,11 @@ class Client:
     def receive_updates(self, window):
         while self.connected:
             data = self.receive_message()
-            if type(data) == GameState:
+            if not data:
+                sleep(0.1)
+            elif type(data) == GameState:
                 window.update_game_state(data)
+
         self.sock_rec.close()
 
     def send_player_events(self, window):

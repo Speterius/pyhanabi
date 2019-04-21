@@ -4,6 +4,7 @@ from gui_elements import NameTab, TextButton, CardTab
 from settings import *
 from time import sleep
 
+
 class GameWindow(arcade.Window):
     def __init__(self):
         super().__init__(width=SCREEN_WIDTH, height=SCREEN_HEIGHT, title=SCREEN_TITLE)
@@ -65,6 +66,23 @@ class GameWindow(arcade.Window):
         self.generated = False
         self.card_tab_list = arcade.SpriteList()     # Card Tab Spritelist
 
+        self.selected_card = 0
+
+    def get_card_selection(self):
+
+        selected = []
+        i = 0
+        card_tab_index = 0
+        for c in self.card_tab_list:
+            if c.selected:
+                selected.append(c)
+                card_tab_index = i
+            i += 1
+
+        assert len(selected) == 1
+        card = selected[0].card
+        return card, card_tab_index
+
     def get_player_event(self):
         return self.PE
 
@@ -76,10 +94,24 @@ class GameWindow(arcade.Window):
         self.PE.next_turn = True
 
     def burn_btn_click(self):
+
+        card_burned, index = self.get_card_selection()
+
         self.PE.burn = True
+        self.PE.next_turn = True
+        self.PE.card_burned = card_burned
+
+        self.card_tab_list[index].burn()
 
     def place_btn_click(self):
+
+        card_placed, index = self.get_card_selection()
+
         self.PE.place = True
+        self.PE.next_turn = True
+        self.PE.card_placed = card_placed
+
+        self.card_tab_list[index].place()
 
     def on_draw(self):
         arcade.start_render()
@@ -100,15 +132,27 @@ class GameWindow(arcade.Window):
                                  SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.WHITE, 14,
                                  align="center", anchor_x='center', anchor_y='center')
 
+        if self.game_state is not None and self.game_state.started:
+            arcade.draw_text(f'INFO POINTS: {self.game_state.info_pnt}',
+                             SCREEN_WIDTH - 100, SCREEN_HEIGHT / 2, arcade.color.WHITE, 14,
+                             align="center", anchor_x='center', anchor_y='center')
+
+            arcade.draw_text(f'LIFE POINTS: {self.game_state.life}',
+                             SCREEN_WIDTH - 100, SCREEN_HEIGHT / 2 - 50, arcade.color.WHITE, 14,
+                             align="center", anchor_x='center', anchor_y='center')
+
         if self.card_tab_list is not None:
+            self.draw_cards()
+
+    def draw_cards(self):
+        success = False
+        while not success:
             try:
                 self.card_tab_list.draw()
-            except ValueError:
-                sleep(0.5)
-                try:
-                    self.card_tab_list.draw()
-                except:
-                    pass
+                success = True
+            except (ValueError, AttributeError) as e:
+                print(e)
+                sleep(0.1)
 
     def generate_cards(self, GS):
         for ID in list(GS.player_cards.keys()):
@@ -179,11 +223,27 @@ class GameWindow(arcade.Window):
             if b.check_mouse_press(x, y):
                 b.on_press()
 
-    def on_mouse_release(self, x: float, y: float, button: int,
-                         modifiers: int):
+        for c in self.card_tab_list:
+            if c.self_card:
+                if c.check_mouse_press(x, y):
+                    c.on_press_down()
+
+    def on_mouse_release(self, x: float, y: float, button: int, modifiers: int):
         for b in self.buttons:
             if b.pressed:
                 b.on_release()
+
+        for c in self.card_tab_list:
+            if c.self_card:
+                if c.currently_pressed:
+                    c.on_release_up()
+                    if c.selected:
+                        self.selected_card = c
+
+        for c in self.card_tab_list:
+            if c.self_card:
+                if c != self.selected_card:
+                    c.delete_selection()
 
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.Q:
