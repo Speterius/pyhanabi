@@ -24,6 +24,7 @@ class CardTab(arcade.Sprite):
         self.y = self.location[1]                   # Card Tab location y
         self.self_card = self_card                  # Boolean to show whether the card is in the player's hands:
         self.original_scale = 0.65                  # Scaling the image.
+        self.selection_scale = 0.75                 # Scaling it up when selected
 
         # Get filepaths for the assets
         assets_path = os.path.join(PARENT_DIR, 'assets')
@@ -66,8 +67,7 @@ class CardTab(arcade.Sprite):
         self.selected = not self.selected
 
         if self.selected:
-            self._set_scale(0.7)
-            # print('setting scale to .75')
+            self._set_scale(self.selection_scale)
         else:
             self._set_scale(self.original_scale)
 
