@@ -1,11 +1,10 @@
 import arcade
-from settings import *
-from game_data import Card
 import os
-from random import randint
 from arcade.draw_commands import load_texture
+from game_logic import Card
+from settings import *
 
-parent_dir = os.path.abspath(os.path.dirname(__file__))
+PARENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def hex_to_rgb(h):
@@ -18,25 +17,25 @@ class CardTab(arcade.Sprite):
         assert loc in ['bot', 'left', 'top', 'right']
         assert 0 <= index <= 3
 
-        self.card = card
-        self.card_color, self.num = self.card.get_card_data()
-        self.location = card_locations[loc][index]
+        self.card = card                            # Card() object with color and number
+        self.location = CARD_LOCATIONS[loc][index]  # Global settings for the locations
+        self.x = self.location[0]                   # Card Tab location x
+        self.y = self.location[1]                   # Card Tab location y
+        self.self_card = self_card                  # Boolean to show whether the card is in the player's hands:
+        self.original_scale = 0.65                  # Scaling the image.
 
-        self.x = self.location[0]
-        self.y = self.location[1]
-
-        self.self_card = self_card
-        self.original_scale = 0.65
-
-        assets_path = os.path.join(parent_dir, 'assets')
-        filename = f'{self.card_color}_{self.num}.png'
+        # Get filepaths for the assets
+        assets_path = os.path.join(PARENT_DIR, 'assets')
+        filename = f'{self.card.color}_{self.card.number}.png'
         filename_question_mark = "question_mark.png"
         filepath = os.path.join(assets_path, filename)
 
+        # Load sprite with additional question mark texture
         super().__init__(filename=filepath, scale=self.original_scale, center_x=self.x, center_y=self.y)
-        QM_texture = load_texture(os.path.join(assets_path, filename_question_mark))
-        self.append_texture(QM_texture)
+        question_mark_texture = load_texture(os.path.join(assets_path, filename_question_mark))
+        self.append_texture(question_mark_texture)
 
+        # If the card is the player's card: show question mark texture
         if self_card:
             self.set_texture(1)
         else:
@@ -44,22 +43,6 @@ class CardTab(arcade.Sprite):
 
         self.selected = False
         self.currently_pressed = False
-
-    def place(self):
-        self.center_x = SCREEN_WIDTH/2
-        self.center_y = SCREEN_HEIGHT/2
-        self._set_scale(0.4)
-
-        self.self_card = False
-        self.set_texture(0)
-
-    def burn(self):
-        self.center_x = int(SCREEN_WIDTH*0.2) + randint(-10, 10)
-        self.center_y = int(SCREEN_HEIGHT*0.2) + randint(-10, 10)
-        self._set_scale(0.4)
-
-        self.self_card = False
-        self.set_texture(1)
 
     def check_mouse_press(self, x, y):
         if x > self.center_x + self.width / 2:
@@ -72,55 +55,49 @@ class CardTab(arcade.Sprite):
             return False
         return True
 
-    def delete_selection(self):
-        self._set_scale(self.original_scale)
-        self.selected = False
-
     def on_press_down(self):
         self.currently_pressed = True
 
     def on_release_up(self):
         self.currently_pressed = False
+
         if not self.selected:
             self.selected = True
-            self._set_scale(1.0)
+            self._set_scale(0.75)
         else:
-            self.delete_selection()
+            self.selected = False
+            self._set_scale(self.original_scale)
 
 
 class NameTab:
-    def __init__(self, center_x, center_y, user_id, width=NAME_WIDTH, height=NAME_HEIGHT, text='DefaultText'):
+    def __init__(self, center_x, center_y, width=NAME_WIDTH, height=NAME_HEIGHT, text='DefaultText'):
         self.font = 20
         self.text = text
 
         self.width = width
         self.height = height
 
-        self.x = center_x
-        self.y = center_y
+        self.center_x = center_x
+        self.center_y = center_y
 
-        self.highlight_color = hex_to_rgb('80d0c7')
-        self.color = hex_to_rgb('13547a')
+        self.highlight_color: arcade.Color = hex_to_rgb('80d0c7')
+        self.color: arcade.Color = hex_to_rgb('13547a')
 
-        self.user_id = user_id
         self.highlight = False
-
-    def set_color(self, color):
-        self.color = color
 
     def draw(self):
         if self.highlight:
-            # arcade.draw_ellipse_outline(self.x, self.y, self.width/2+20, self.height + 20, self.highlight_color, 2, num_segments=1024)
-            arcade.draw_rectangle_filled(self.x, self.y, self.width, self.height, self.highlight_color)
+            arcade.draw_rectangle_filled(center_x=self.center_x, center_y=self.center_y,
+                                         width=self.width, height=self.height,
+                                         color=self.highlight_color)
         else:
-            arcade.draw_rectangle_filled(self.x, self.y, self.width, self.height, self.color)
+            arcade.draw_rectangle_filled(center_x=self.center_x, center_y=self.center_y,
+                                         width=self.width, height=self.height,
+                                         color=self.color)
 
-        arcade.draw_text(self.text, self.x, self.y,
-                         arcade.color.BLACK, font_size=self.font,
+        arcade.draw_text(self.text, self.center_x, self.center_y,
+                         color=arcade.color.BLACK, font_size=self.font,
                          width=self.width, align="center", anchor_x="center", anchor_y="center")
-
-    def set_highlight(self, should_highlight: bool):
-        self.highlight = should_highlight
 
 
 class TextButton:
@@ -150,14 +127,12 @@ class TextButton:
 
         self.action_function = action_function
 
-    def set_face_color(self, arcade_color_obj):
-        self.face_color = arcade_color_obj
+    def set_face_color(self, color: arcade.Color):
+        self.face_color = color
         return 1
 
     def draw(self):
-        """ Draw the button """
-        arcade.draw_rectangle_filled(self.center_x, self.center_y, self.width,
-                                     self.height, self.face_color)
+        arcade.draw_rectangle_filled(self.center_x, self.center_y, self.width, self.height, self.face_color)
 
         if not self.pressed:
             color = self.shadow_color
@@ -189,13 +164,13 @@ class TextButton:
                          self.center_x - self.width / 2, self.center_y + self.height / 2,
                          color, self.button_height)
 
-        x = self.center_x
-        y = self.center_y
+        text_x = self.center_x
+        text_y = self.center_y
         if not self.pressed:
-            x -= self.button_height
-            y += self.button_height
+            text_x -= self.button_height
+            text_y += self.button_height
 
-        arcade.draw_text(self.text, x, y,
+        arcade.draw_text(self.text, text_x, text_y,
                          arcade.color.BLACK, font_size=self.font_size,
                          width=self.width, align="center",
                          anchor_x="center", anchor_y="center")
@@ -217,41 +192,3 @@ class TextButton:
         if y < self.center_y - self.height / 2:
             return False 
         return True
-
-
-class CardButton(TextButton):
-    def __init__(self, center_x, center_y, card_data, action_function, card_index):
-        super().__init__(center_x=center_x,
-                         center_y=center_y,
-                         width=CARD_WIDTH,
-                         height=CARD_HEIGHT,
-                         text=str(card_data[1]),
-                         action_function=self.card_clicked,
-                         font_size=30,
-                         font_face="Arial")
-        self.card_data = card_data
-
-        self.card_color = card_data[0]
-        self.card_number = card_data[1]
-
-        self.action_function = action_function
-
-        self.color_dict = {'blue': arcade.color.BLUE,
-                           'red': arcade.color.RED,
-                           'green': arcade.color.GREEN,
-                           'yellow': arcade.color.YELLOW,
-                           'white': arcade.color.WHITE}
-
-        self.face_color = self.color_dict[self.card_color]
-
-        self.card_index = card_index
-        self.selected = False
-
-    def card_clicked(self):
-        print("Clicked Card:  " + self.card_color + str(self.card_number))
-        self.selected = True
-
-    def on_release(self):
-        super().on_release()
-        self.card_clicked()
-        self.action_function()
