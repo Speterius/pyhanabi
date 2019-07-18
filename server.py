@@ -26,10 +26,10 @@ class Server:
 
         # Dictionaries to store user data: keys are integers from 0->MAX_PLAYERS
         self.client_sockets_rec = {}        # The sockets the server receives from
-        self.client_sockets_push = {}       # The sockets the serbver broadcasts to.
+        self.client_sockets_push = {}       # The sockets the server broadcasts to.
         self.players = {}                   # Key: INT, Value: 'Name'
 
-        self.listening_to = None            # INT key to current player
+        self.listening_to = self.GS.current_player  # INT key to current player
 
     # Wait until MAX_PLAYERS number of connections are achieved. Collect all user info and respond.
     def accept_connections(self):
@@ -44,7 +44,7 @@ class Server:
 
             data = self.receive_packet(client_sock_rec)
 
-            if data.type() is ConnectionAttempt:
+            if type(data) is ConnectionAttempt:
 
                 self.players[player_id_counter] = data.user_name
                 self.client_sockets_rec[player_id_counter] = client_sock_rec
@@ -75,13 +75,14 @@ class Server:
 
     # Listen to a given socket for events. Update the game state when an event arrives.
     def receive_events(self):
+        print(f'Listening to ID: {self.listening_to}')
         while True:
-            data = self.receive_packet(self.listening_to)
+            data = self.receive_packet(self.client_sockets_rec[self.listening_to])
 
-            if data.type() is Event:
+            if type(data) is Event:
                 self.GS.update(event=data)
 
-                self.listening_to = self.client_sockets[self.GS.current_player]
+                self.listening_to = self.client_sockets_rec[self.GS.current_player]
 
     # Continously broadcast the game state at a fixed update rate to all players.
     def broadcast_updates(self):
@@ -98,11 +99,15 @@ def main():
     server = Server()
     server.accept_connections()
 
-    thread_receive_events = Thread(target=server.receive_events(), daemon=True)
-    thread_broadcast_updates = Thread(target=server.broadcast_updates(), daemon=True)
+    print('Done with accepting connections. Starting Threads: ...')
+
+    thread_receive_events = Thread(target=server.receive_events(), args=(), daemon=True)
+    thread_broadcast_updates = Thread(target=server.broadcast_updates(), args=(), daemon=True)
 
     thread_receive_events.start()
     thread_broadcast_updates.start()
+
+    return 0
 
 
 if __name__ == '__main__':

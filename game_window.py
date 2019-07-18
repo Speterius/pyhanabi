@@ -1,5 +1,4 @@
 import arcade
-import numpy
 from data_packets import GameStateUpdate
 from gui_elements import NameTab, TextButton, CardTab
 from settings import *
@@ -9,6 +8,7 @@ from game_logic import Card, GameState, Event, CardPull, CardBurned, CardPlaced,
 class GameWindow(arcade.Window):
     def __init__(self, client):
         super().__init__(width=SCREEN_WIDTH, height=SCREEN_HEIGHT, title=SCREEN_TITLE)
+        arcade.set_background_color(arcade.color.AMAZON)
         # Client used to send events to the server and to receive GS (GameState) updates.
         self.client = client
         self.GS = None
@@ -93,10 +93,11 @@ class GameWindow(arcade.Window):
                              SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, arcade.color.WHITE, 14,
                              align="center", anchor_x='center', anchor_y='center')
 
-        elif len(self.GS.players.keys()) < MAX_PLAYERS:
-            arcade.draw_text(f'Waiting for players...{self.game_state.user_count}/{MAX_PLAYERS}',
-                             SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, arcade.color.WHITE, 14,
-                             align="center", anchor_x='center', anchor_y='center')
+        if self.GS is not None:
+            if len(self.GS.players.keys()) < MAX_PLAYERS:
+                arcade.draw_text(f'Waiting for players...{len(self.GS.players)}/{MAX_PLAYERS}',
+                                 SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, arcade.color.WHITE, 14,
+                                 align="center", anchor_x='center', anchor_y='center')
 
     def on_draw(self):
         arcade.start_render()
@@ -107,6 +108,8 @@ class GameWindow(arcade.Window):
 
         # If the game has started, draw the UI elements:
         else:
+
+            print('getting here')
 
             # 1) Arcade Shapes
             self.shapes.draw()
@@ -146,10 +149,10 @@ class GameWindow(arcade.Window):
                 self.card_tab_list.append(card_tab)
 
     # Generator method to loop along a list with a different starting point.
-    @staticmethod
-    def starting_with(lst, start):
-        for idx in range(len(lst)):
-            yield lst[(idx + start) % len(lst)]
+    # @staticmethod
+    # def starting_with(lst, start):
+    #     for idx in range(len(lst)):
+    #         yield lst[(idx + start) % len(lst)]
 
     def update_name_tabs(self, players):
 
@@ -187,7 +190,7 @@ class GameWindow(arcade.Window):
 
         # If we are already playing:
         if game_state_update.started:
-
+            print('game started received at GS UPDATE')
             # Make the card tabs at the start of the game.
             if not self.cards_generated:
                 self.generate_card_tabs(game_state_update.player_hands)

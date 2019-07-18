@@ -26,7 +26,7 @@ class Client:
 
     def receive_packet(self):
         try:
-            data, server = self.sock_rec.recvfrom(self.BUFFERSIZE)
+            data, server = self.sock_push.recvfrom(self.BUFFERSIZE)
             if not len(data):
                 return False
             return pickle.loads(data)
@@ -36,7 +36,7 @@ class Client:
     def send_packet(self, data):
         data = pickle.dumps(data)
         try:
-            self.sock_push.sendall(data)
+            self.sock_rec.sendall(data)
         except ConnectionResetError:
             print('Server socket is down. Closing game.')
             sys.exit()
@@ -57,14 +57,14 @@ class Client:
 
         while not self.connected:
             try:
-                self.sock_rec.connect(self.server_address)
+                self.sock_push.connect(self.server_address)
             except ConnectionRefusedError:
                 self.wait_for_server()
             finally:
-                self.sock_push.connect(self.server_address)
+                self.sock_rec.connect(self.server_address)
 
             con_attempt = pickle.dumps(ConnectionAttempt(self.user_name))
-            self.sock_rec.sendall(con_attempt)
+            self.sock_push.sendall(con_attempt)
 
             data = self.receive_packet()
 
@@ -102,7 +102,7 @@ class Client:
 
     def send_game_event(self, event):
         while True:
-            if event.type() is Event:
+            if type(event) is Event:
                 try:
                     self.sock_push.sendall(event.to_packet())
                 except ConnectionResetError:
@@ -124,7 +124,7 @@ def main():
     game_window = GameWindow(client=client)
 
     # Receive from server on a separate thread:
-    thread_receive = Thread(target=client.receive_game_state_broadcast, args=game_window, daemon=True)
+    thread_receive = Thread(target=client.receive_game_state_broadcast, args=(game_window, ), daemon=True)
     thread_connect = Thread(target=client.connect_to_server, args=(game_window, thread_receive), daemon=True)
 
     thread_connect.start()
