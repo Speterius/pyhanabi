@@ -101,13 +101,13 @@ class Client:
                     print(f'receiving non-GameState broadcast with type: {type(data)}')
 
     def send_game_event(self, event):
-        while True:
-            if type(event) is Event:
-                try:
-                    self.sock_push.sendall(event.to_packet())
-                except ConnectionResetError:
-                    print('Server socket is down.')
-                    self.wait_for_server()
+        # if type(event) is Event:
+        try:
+            print('Sending Game event:', event)
+            self.sock_push.sendall(event.to_packet())
+        except ConnectionResetError:
+            print('Server socket is down.')
+            self.wait_for_server()
 
 
 def main():

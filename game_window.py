@@ -2,9 +2,10 @@ import arcade
 from data_packets import GameStateUpdate
 from gui_elements import NameTab, TextButton, CardTab, CardTabList
 from settings import *
-from game_logic import Card, GameState, Event, CardPull, CardBurned, CardPlaced, NextTurn, InfoUsed
+from game_logic import CardPull, CardBurned, CardPlaced, NextTurn, InfoUsed
 
 
+# noinspection PyArgumentList
 class GameWindow(arcade.Window):
     def __init__(self, client):
         super().__init__(width=SCREEN_WIDTH, height=SCREEN_HEIGHT, title=SCREEN_TITLE)
@@ -26,7 +27,7 @@ class GameWindow(arcade.Window):
         self.generate_gradient_background()
 
         # Player Names and Locations:
-        self.name_tabs = []                                                     # store NameTab objects
+        self.name_tabs = {}                                                     # store NameTab objects
         self.name_loc = {'bot': (self.center_x, int(NAME_HEIGHT/2)),            # locations of NameTab objects
                          'left': (int(NAME_WIDTH/2), self.third_line_y),
                          'top': (self.center_x, int(SCREEN_HEIGHT-NAME_HEIGHT/2)),
@@ -62,7 +63,8 @@ class GameWindow(arcade.Window):
         # Cards:
         self.cards_generated = False
         self.card_tab_list = CardTabList()          # Card Tab arcade.Spritelist
-        self.selected_card = 0
+
+        self.selected_card_tab = None
 
     def generate_gradient_background(self):
         color1 = (26, 15, 35)
@@ -97,7 +99,7 @@ class GameWindow(arcade.Window):
         # If the game has started, draw the UI elements:
         else:
             # 2) Player Names
-            for n in self.name_tabs:
+            for _, n in self.name_tabs.items():
                 n.draw()
 
             # 3) Buttons
@@ -148,7 +150,7 @@ class GameWindow(arcade.Window):
             player_locations[(self.player_id+i) % len(players)] = position_list[i]
 
         # 2) Update the Name Tabs list:
-        self.name_tabs = []
+        self.name_tabs = {}
 
         for player_id, location in player_locations.items():
 
@@ -157,7 +159,7 @@ class GameWindow(arcade.Window):
             name = players[player_id]
 
             nametab = NameTab(center_x=x, center_y=y, text=name)
-            self.name_tabs.append(nametab)
+            self.name_tabs[player_id] = nametab
 
         self.player_locations = player_locations
 
@@ -180,11 +182,11 @@ class GameWindow(arcade.Window):
                 self.cards_generated = True
 
             # Highlight the player name tab whose turn it is:
-            for i, n in enumerate(self.name_tabs):
-                if i == game_state_update.current_player:
-                    n.highlight = True
+            for player_id, nametab in self.name_tabs.items():
+                if player_id == game_state_update.current_player:
+                    nametab.set_highlight(True)
                 else:
-                    n.highlight = False
+                    nametab.set_highlight(False)
 
             # todo: update card tabs
 
@@ -198,21 +200,14 @@ class GameWindow(arcade.Window):
         self.GS = game_state_update
 
     def get_card_selection(self):
-        # todo
-        pass
 
-        # selected = []
-        # i = 0
-        # card_tab_index = 0
-        # for c in self.card_tab_list:
-        #     if c.selected:
-        #         selected.append(c)
-        #         card_tab_index = i
-        #     i += 1
-        #
-        # assert len(selected) == 1
-        # card = selected[0].card
-        # return card, card_tab_index
+        if self.selected_card_tab is None:
+            return None, None
+
+        card = self.selected_card_tab.card
+        card_position = self.selected_card_tab.index
+
+        return card, card_position
 
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
         for b in self.buttons:
@@ -229,13 +224,21 @@ class GameWindow(arcade.Window):
             if b.pressed:
                 b.on_release()
 
-        for c in self.card_tab_list:
+        for i, c in enumerate(self.card_tab_list):
             if c.self_card and c.currently_pressed:
 
                 c.on_release()
 
                 if c.selected:
-                    self.selected_card = c
+                    self.selected_card_tab = c
+                    self.delete_other_selections(selection=i)
+
+    def delete_other_selections(self, selection):
+        for i, c in enumerate(self.card_tab_list):
+            if i == selection:
+                continue
+            else:
+                c.set_selection(False)
 
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.Q:
@@ -243,24 +246,45 @@ class GameWindow(arcade.Window):
 
     def on_key_release(self, key, modifiers):
         print('KEY RELEASE!')
+    #
+    #
+    # PLAYER EVENTS:
+    #
+    # _____________
 
-    # Player events:
     def info_btn_click(self):
-        # todo
-        pass
+        print("clicked info button")
+        event = InfoUsed(self.player_id)
+
+        print("sending event:", event)
+        self.client.send_game_event(event)
 
     def burn_btn_click(self):
-        # todo
-        pass
+        card, card_position = self.get_card_selection()
+
+        if card is not None and card_position is not None:
+
+            event = CardBurned(self.player_id, card, card_position)
+            self.client.send_game_event(event)
+
+        else:
+            print('Select card first.')
 
     def place_btn_click(self):
-        # todo
-        pass
+        card, card_position = self.get_card_selection()
+
+        if card is not None and card_position is not None:
+
+            event = CardPlaced(self.player_id, card, card_position)
+            self.client.send_game_event(event)
+
+        else:
+            print('Select card first.')
 
     def pull_card_click(self):
-        # todo
-        pass
+        event = CardPull(self.player_id)
+        self.client.send_game_event(event)
 
     def next_turn_click(self):
-        # todo
-        pass
+        event = NextTurn(self.player_id)
+        self.client.send_game_event(event)

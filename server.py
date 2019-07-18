@@ -1,8 +1,7 @@
 from socket import socket, AF_INET, SOCK_STREAM
 import pickle
-from threading import Thread
-from time import sleep
 from settings import *
+from time import sleep
 from data_packets import ConnectionAttempt, ConnectionConfirmed
 from game_logic import GameState, Event
 
@@ -13,10 +12,11 @@ class Server:
         # Game state broadcast update rate:
         self.UPDATE_RATE = 5   # Hz
         self.PORT = 10000
-        self.BUFFERSIZE = 4096
+        self.BUFFERSIZE = 8192
 
         # Generate starting GAME STATE:
         self.GS = GameState(MAX_PLAYERS)
+        self.changed = True                 # Broadcast message to all players when the the GameState has changed.
 
         # Set up server socket:
         self.sock = socket(AF_INET, SOCK_STREAM)
@@ -74,41 +74,75 @@ class Server:
 
     # Listen to a given socket for events. Update the game state when an event arrives.
     def receive_events(self):
-        print(f'Listening to ID: {self.listening_to}')
-        while True:
-            data = self.receive_packet(self.client_sockets_rec[self.listening_to])
-
-            if type(data) is Event:
-                self.GS.update(event=data)
-
-                self.listening_to = self.client_sockets_rec[self.GS.current_player]
-
-    # Continously broadcast the game state at a fixed update rate to all players.
-    def broadcast_updates(self):
         print(f"Server has {MAX_PLAYERS} players. Starting Game...")
         self.GS.started = True
 
+        # 0) Initial broadcast of game start:
+        sleep(0.5)      # Wait a bit for clients to start their threads.
+        self.broadcast_update()
+        print(f'Listening to player with id: {self.listening_to} with Name: {self.players[self.listening_to]}')
+
         while True:
-            for player_id in self.client_sockets_push.keys():
-                client_socket = self.client_sockets_push[player_id]
-                try:
-                    client_socket.sendall(self.GS.to_packet(self.players))
-                except ConnectionResetError:
-                    print('Remote socket disconnected. Waiting a bit, then resending packet.')
-                    sleep(0.5)
+            # 1) Listen to player events:
+            try:
+                data = self.receive_packet(self.client_sockets_rec[self.listening_to])
+            except KeyError:
+                print("Received data:", data, f'from {self.players[self.listening_to]}')
+
+            print("Received data:", data, f'from {self.players[self.listening_to]}')
+
+            if data:
+
+                # 2) Update Game State
+                changed = self.GS.update(event=data)
+
+                # 3) If the Game State has changed, broadcast to all players:
+                if changed:
+                    self.broadcast_update()
+
+                # 4) Switch the socket to listen to:
+                self.listening_to = self.client_sockets_rec[self.GS.current_player]
+
+    def broadcast_update(self):
+        for player_id, client_socket in self.client_sockets_push.items():
+            try:
+                client_socket.sendall(self.GS.to_packet(self.players))
+            except ConnectionResetError:
+                print('Remote socket disconnected. Skipping player.')
+            except:
+                # todo
+                print('Sending GS update failed. Skipping player.')
+
+    # Continously broadcast the game state at a fixed update rate to all players.
+    # def broadcast_updates_continuously(self):
+    #     print(f"Server has {MAX_PLAYERS} players. Starting Game...")
+    #     self.GS.started = True
+    #
+    #     while True:
+    #
+    #         for player_id in self.client_sockets_push.keys():
+    #             client_socket = self.client_sockets_push[player_id]
+    #             try:
+    #                 client_socket.sendall(self.GS.to_packet(self.players))
+    #             except ConnectionResetError:
+    #                 print('Remote socket disconnected. Waiting a bit, then resending packet.')
+    #                 sleep(0.5)
 
 
 def main():
+    # Instansiate server:
     server = Server()
+
+    # Wait for connections:
     server.accept_connections()
 
-    print('Done with accepting connections. Starting Threads: ...')
+    # Start game, listen to player events, update game state and broadcast:
+    server.receive_events()
 
-    thread_receive_events = Thread(target=server.receive_events, args=(), daemon=True)
-    thread_broadcast_updates = Thread(target=server.broadcast_updates, args=(), daemon=False)
-
-    thread_receive_events.start()
-    thread_broadcast_updates.start()
+    # thread_receive_events = Thread(target=server.receive_events, args=())
+    # thread_broadcast_updates = Thread(target=server.broadcast_updates, args=(), daemon=False)
+    # thread_receive_events.start()
+    # thread_broadcast_updates.start()
 
     return 0
 

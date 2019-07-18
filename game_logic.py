@@ -1,3 +1,4 @@
+import pickle
 import pprint
 from dataclasses import dataclass
 import random
@@ -65,11 +66,11 @@ class Deck:
 class Event:
     player: int
 
-    def type(self):
-        return type(self)
-
     def to_json(self):
         pass
+
+    def to_packet(self):
+        return pickle.dumps(self)
 
 
 class InfoUsed(Event):
@@ -161,8 +162,8 @@ class GameState:
 
     def update(self, event):
         # Possible events: InfoUsed, CardBurned, CardPlaced, CardPull, NextTurn
-        # Returns True on successful update to GameState.
-        # Returns False, when event request is not possible.
+        # Returns True on successful update to GameState.       -> denotes 'changed = True' bool
+        # Returns False, when event request is not possible.    -> denotes 'changed = False' bool, no need to broadcast
 
         # Only accept events from the current player:
         if self.current_player != event.player:
@@ -170,7 +171,7 @@ class GameState:
             return False
 
         # When a player gives someone info:
-        if event.type() is InfoUsed and not self.action_done:
+        if type(event) is InfoUsed and not self.action_done:
 
             # If they enoughh points left:
             if self.info_points > 0:
@@ -189,7 +190,7 @@ class GameState:
                 return False
 
         # When a player burns a card:
-        elif event.type() is CardBurned and not self.action_done:
+        elif type(event) is CardBurned and not self.action_done:
 
             # Get an info point back:
             self.add_info_point()
@@ -208,7 +209,7 @@ class GameState:
             return True
 
         # When a player places a card on the table:
-        elif event.type() is CardPlaced and not self.action_done:
+        elif type(event) is CardPlaced and not self.action_done:
 
             # Check whether for this color, this number is correct:
             # If yes: -> add card to table stash;
@@ -232,7 +233,7 @@ class GameState:
             return True
 
         # When a player pulls a card:
-        elif event.type() is CardPull:
+        elif type(event) is CardPull:
 
             # Search for the empty slot in a player's hand and pull a card into it:
             for card_position in self.player_hands[event.player].keys():
@@ -248,7 +249,7 @@ class GameState:
             return False
 
         # When a player clicks next turn:
-        elif event.type() is NextTurn:
+        elif type(event) is NextTurn:
 
             # Next Turn is only possible if an action has already been done and the player has all cards:
 

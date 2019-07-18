@@ -14,12 +14,13 @@ def hex_to_rgb(h):
 
 class CardTab(arcade.Sprite):
     def __init__(self, card, loc, index, self_card=False):
-        assert type(card) == Card
-        assert loc in ['bot', 'left', 'top', 'right']
-        assert 0 <= index <= 3
+        # assert type(card) == Card
+        # assert loc in ['bot', 'left', 'top', 'right']
+        # assert 0 <= index <= 3
 
-        self.card = card                            # Card() object with color and number
+        self.card: Card = card                            # Card() object with color and number
         self.location = CARD_LOCATIONS[loc][index]  # Global settings for the locations
+        self.index = index                          # Store index
         self.x = self.location[0]                   # Card Tab location x
         self.y = self.location[1]                   # Card Tab location y
         self.self_card = self_card                  # Boolean to show whether the card is in the player's hands:
@@ -65,6 +66,11 @@ class CardTab(arcade.Sprite):
     def on_release(self):
         self.currently_pressed = False
         self.selected = not self.selected
+
+        self.set_selection(self.selected)
+
+    def set_selection(self, foo: bool):
+        self.selected = foo
 
         if self.selected:
             self._set_scale(self.selection_scale)
@@ -114,6 +120,9 @@ class NameTab:
         arcade.draw_text(self.text, self.center_x, self.center_y,
                          color=arcade.color.BLACK, font_size=self.font,
                          width=self.width, align="center", anchor_x="center", anchor_y="center")
+
+    def set_highlight(self, foo: bool):
+        self.highlight = foo
 
 
 class TextButton:
