@@ -1,6 +1,6 @@
 import arcade
 from data_packets import GameStateUpdate
-from gui_elements import NameTab, TextButton, CardTab
+from gui_elements import NameTab, TextButton, CardTab, CardTabList
 from settings import *
 from game_logic import Card, GameState, Event, CardPull, CardBurned, CardPlaced, NextTurn, InfoUsed
 
@@ -61,7 +61,7 @@ class GameWindow(arcade.Window):
 
         # Cards:
         self.cards_generated = False
-        self.card_tab_list = arcade.SpriteList()     # Card Tab Spritelist
+        self.card_tab_list = CardTabList()          # Card Tab arcade.Spritelist
         self.selected_card = 0
 
     def generate_gradient_background(self):
@@ -71,21 +71,6 @@ class GameWindow(arcade.Window):
         colors = (color1, color1, color2, color2)
         rect = arcade.create_rectangle_filled_with_colors(points, colors)
         self.shapes.append(rect)
-
-    def get_card_selection(self):
-
-        selected = []
-        i = 0
-        card_tab_index = 0
-        for c in self.card_tab_list:
-            if c.selected:
-                selected.append(c)
-                card_tab_index = i
-            i += 1
-
-        assert len(selected) == 1
-        card = selected[0].card
-        return card, card_tab_index
 
     def draw_start_screen(self):
         if not self.connection:
@@ -102,18 +87,15 @@ class GameWindow(arcade.Window):
     def on_draw(self):
         arcade.start_render()
 
+        # Draw purple background:
+        self.shapes.draw()
+
         # If the game hasn't started yet, draw the connection screen:
         if self.GS is None or not self.GS.started:
             self.draw_start_screen()
 
         # If the game has started, draw the UI elements:
         else:
-
-            print('getting here')
-
-            # 1) Arcade Shapes
-            self.shapes.draw()
-
             # 2) Player Names
             for n in self.name_tabs:
                 n.draw()
@@ -134,42 +116,44 @@ class GameWindow(arcade.Window):
             # 5) Draw Cards
             self.card_tab_list.draw()
 
+            try:
+                if self.GS.started:
+                    arcade.draw_text('The game has started', SCREEN_WIDTH/4, SCREEN_HEIGHT/4, arcade.color.WHITE)
+                else:
+                    arcade.draw_text('GS.started is false', SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, arcade.color.WHITE)
+            except:
+                pass
+
     def generate_card_tabs(self, player_hands):
 
         # Loop through the players and generate the cards tabs GUI elements:
-        for ID in player_hands.keys():
+        for player_id in player_hands:
 
-            # IF the card is in the client's hand: hide the sprite (self_card).
-            self_card = self.player_id == ID
-            card_location = self.user_locations[ID]
+            # If the card is in the client's hand: hide the sprite (self_card).
+            self_card = self.player_id == player_id
+            loc = self.player_locations[player_id]
 
             # Loop through the 4 cards and generate each Sprite and add to the SpriteList:
-            for i, c in enumerate(player_hands[ID]):
-                card_tab = CardTab(card=c, loc=card_location, index=i, self_card=self_card)
+            for card_index, card in player_hands[player_id].items():
+                card_tab = CardTab(card=card, loc=loc, index=card_index, self_card=self_card)
                 self.card_tab_list.append(card_tab)
-
-    # Generator method to loop along a list with a different starting point.
-    # @staticmethod
-    # def starting_with(lst, start):
-    #     for idx in range(len(lst)):
-    #         yield lst[(idx + start) % len(lst)]
 
     def update_name_tabs(self, players):
 
         # 1) Map players to locations on the game window:
-
         position_list = list(self.name_loc.keys())      # This will return ['bot', 'left', 'top', 'right']
         player_locations = dict()                       # Empty dict to store location mapping:
 
         for i in range(len(players)):
-            player_locations[(self.player_id+i) % len(players)] = self.name_loc[position_list[i]]
+            player_locations[(self.player_id+i) % len(players)] = position_list[i]
 
         # 2) Update the Name Tabs list:
         self.name_tabs = []
 
-        for player_id in player_locations:
-            x = player_locations[player_id][0]
-            y = player_locations[player_id][1]
+        for player_id, location in player_locations.items():
+
+            x = self.name_loc[location][0]
+            y = self.name_loc[location][1]
             name = players[player_id]
 
             nametab = NameTab(center_x=x, center_y=y, text=name)
@@ -190,7 +174,6 @@ class GameWindow(arcade.Window):
 
         # If we are already playing:
         if game_state_update.started:
-            print('game started received at GS UPDATE')
             # Make the card tabs at the start of the game.
             if not self.cards_generated:
                 self.generate_card_tabs(game_state_update.player_hands)
@@ -214,6 +197,23 @@ class GameWindow(arcade.Window):
         # Update the current GS object.
         self.GS = game_state_update
 
+    def get_card_selection(self):
+        # todo
+        pass
+
+        # selected = []
+        # i = 0
+        # card_tab_index = 0
+        # for c in self.card_tab_list:
+        #     if c.selected:
+        #         selected.append(c)
+        #         card_tab_index = i
+        #     i += 1
+        #
+        # assert len(selected) == 1
+        # card = selected[0].card
+        # return card, card_tab_index
+
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
         for b in self.buttons:
             if b.check_mouse_press(x, y):
@@ -222,7 +222,7 @@ class GameWindow(arcade.Window):
         for c in self.card_tab_list:
             if c.self_card:
                 if c.check_mouse_press(x, y):
-                    c.on_press_down()
+                    c.on_press()
 
     def on_mouse_release(self, x: float, y: float, button: int, modifiers: int):
         for b in self.buttons:
@@ -230,23 +230,19 @@ class GameWindow(arcade.Window):
                 b.on_release()
 
         for c in self.card_tab_list:
-            if c.self_card:
-                if c.currently_pressed:
-                    c.on_release_up()
-                    if c.selected:
-                        self.selected_card = c
+            if c.self_card and c.currently_pressed:
 
-        for c in self.card_tab_list:
-            if c.self_card:
-                if c != self.selected_card:
-                    c.delete_selection()
+                c.on_release()
+
+                if c.selected:
+                    self.selected_card = c
 
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.Q:
             print('Q')
 
     def on_key_release(self, key, modifiers):
-        print('RELEASE!')
+        print('KEY RELEASE!')
 
     # Player events:
     def info_btn_click(self):

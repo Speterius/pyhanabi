@@ -44,7 +44,3 @@ class GameStateUpdate:
 
     def to_pickle(self):
         return pickle.dumps(self)
-
-    def type(self):
-        return type(self)
-

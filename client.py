@@ -26,7 +26,7 @@ class Client:
 
     def receive_packet(self):
         try:
-            data, server = self.sock_push.recvfrom(self.BUFFERSIZE)
+            data, server = self.sock_rec.recvfrom(self.BUFFERSIZE)
             if not len(data):
                 return False
             return pickle.loads(data)
@@ -36,7 +36,7 @@ class Client:
     def send_packet(self, data):
         data = pickle.dumps(data)
         try:
-            self.sock_rec.sendall(data)
+            self.sock_push.sendall(data)
         except ConnectionResetError:
             print('Server socket is down. Closing game.')
             sys.exit()
@@ -67,6 +67,7 @@ class Client:
             self.sock_push.sendall(con_attempt)
 
             data = self.receive_packet()
+            print('received packed:', type(data))
 
             if type(data) is ConnectionConfirmed and data.confirmed:
                 self.connected = True
@@ -78,9 +79,8 @@ class Client:
                 game_window.player_name = data.user_name
 
                 print('>>>> Connection to server successful. Starting Threads:')
+                print('Game window think the connection is:', game_window.connection)
                 thread_receive.start()
-                # thread_send.start()
-
             else:
                 print('Connection is not confirmed.')
 

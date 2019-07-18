@@ -1,7 +1,7 @@
 from socket import socket, AF_INET, SOCK_STREAM
 import pickle
 from threading import Thread
-
+from time import sleep
 from settings import *
 from data_packets import ConnectionAttempt, ConnectionConfirmed
 from game_logic import GameState, Event
@@ -17,7 +17,6 @@ class Server:
 
         # Generate starting GAME STATE:
         self.GS = GameState(MAX_PLAYERS)
-        self.running = True
 
         # Set up server socket:
         self.sock = socket(AF_INET, SOCK_STREAM)
@@ -89,10 +88,14 @@ class Server:
         print(f"Server has {MAX_PLAYERS} players. Starting Game...")
         self.GS.started = True
 
-        while self.running:
+        while True:
             for player_id in self.client_sockets_push.keys():
                 client_socket = self.client_sockets_push[player_id]
-                client_socket.send(self.GS.to_packet(self.players))
+                try:
+                    client_socket.sendall(self.GS.to_packet(self.players))
+                except ConnectionResetError:
+                    print('Remote socket disconnected. Waiting a bit, then resending packet.')
+                    sleep(0.5)
 
 
 def main():
@@ -101,8 +104,8 @@ def main():
 
     print('Done with accepting connections. Starting Threads: ...')
 
-    thread_receive_events = Thread(target=server.receive_events(), args=(), daemon=True)
-    thread_broadcast_updates = Thread(target=server.broadcast_updates(), args=(), daemon=True)
+    thread_receive_events = Thread(target=server.receive_events, args=(), daemon=True)
+    thread_broadcast_updates = Thread(target=server.broadcast_updates, args=(), daemon=False)
 
     thread_receive_events.start()
     thread_broadcast_updates.start()

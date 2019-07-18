@@ -3,6 +3,7 @@ import os
 from arcade.draw_commands import load_texture
 from game_logic import Card
 from settings import *
+import typing
 
 PARENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -32,8 +33,10 @@ class CardTab(arcade.Sprite):
 
         # Load sprite with additional question mark texture
         super().__init__(filename=filepath, scale=self.original_scale, center_x=self.x, center_y=self.y)
-        question_mark_texture = load_texture(os.path.join(assets_path, filename_question_mark))
+        question_mark_texture = load_texture(os.path.join(assets_path, filename_question_mark),
+                                             scale=self.original_scale)
         self.append_texture(question_mark_texture)
+        self._set_scale(self.original_scale)
 
         # If the card is the player's card: show question mark texture
         if self_card:
@@ -55,18 +58,31 @@ class CardTab(arcade.Sprite):
             return False
         return True
 
-    def on_press_down(self):
+    def on_press(self):
         self.currently_pressed = True
 
-    def on_release_up(self):
+    def on_release(self):
         self.currently_pressed = False
+        self.selected = not self.selected
 
-        if not self.selected:
-            self.selected = True
-            self._set_scale(0.75)
+        if self.selected:
+            self._set_scale(0.7)
+            # print('setting scale to .75')
         else:
-            self.selected = False
             self._set_scale(self.original_scale)
+
+
+# This is for type hinting to also accept CardTab instances and not just Sprites.
+T = typing.TypeVar('T', bound=CardTab)
+
+
+class CardTabList(arcade.SpriteList):
+    def __init__(self):
+        super().__init__()
+        self.x = 0
+
+    def __iter__(self) -> typing.Iterable[T]:
+        return iter(self.sprite_list)
 
 
 class NameTab:
