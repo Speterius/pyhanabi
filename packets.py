@@ -109,6 +109,7 @@ class GameStateUpdate(DataPacket):
         return super().to_bytes()
 
 
+@dataclass
 class Event(DataPacket):
     player: int
 

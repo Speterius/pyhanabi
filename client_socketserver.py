@@ -59,6 +59,9 @@ class Client:
             else:
                 print(f'receiving non-GameState broadcast with type: {type(data)}')
 
+    def send_game_event(self, event):
+        self.sock.send(event)
+
 
 def main():
 

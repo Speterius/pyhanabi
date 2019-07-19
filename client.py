@@ -101,7 +101,7 @@ class Client:
         # if type(event) is Event:
         try:
             print('Sending Game event:', event)
-            self.sock_push.sendall(event.to_packet())
+            self.sock.send(event.to_packet())
         except ConnectionResetError:
             print('Server socket is down.')
             self.wait_for_server()

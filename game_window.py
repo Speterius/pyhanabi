@@ -256,10 +256,11 @@ class GameWindow(arcade.Window):
 
     def info_btn_click(self):
         print("clicked info button")
+        print(self.player_id)
         event = InfoUsed(self.player_id)
 
         print("sending event:", event)
-        self.client.send_game_event(event)
+        self.client.send_game_event(event.to_bytes())
 
     def burn_btn_click(self):
         card, card_position = self.get_card_selection()
@@ -267,7 +268,7 @@ class GameWindow(arcade.Window):
         if card is not None and card_position is not None:
 
             event = CardBurned(self.player_id, card, card_position)
-            self.client.send_game_event(event)
+            self.client.send_game_event(event.to_bytes())
 
         else:
             print('Select card first.')
@@ -278,15 +279,15 @@ class GameWindow(arcade.Window):
         if card is not None and card_position is not None:
 
             event = CardPlaced(self.player_id, card, card_position)
-            self.client.send_game_event(event)
+            self.client.send_game_event(event.to_bytes())
 
         else:
             print('Select card first.')
 
     def pull_card_click(self):
         event = CardPull(self.player_id)
-        self.client.send_game_event(event)
+        self.client.send_game_event(event.to_bytes())
 
     def next_turn_click(self):
         event = NextTurn(self.player_id)
-        self.client.send_game_event(event)
+        self.client.send_game_event(event.to_bytes())
