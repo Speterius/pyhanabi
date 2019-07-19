@@ -1,9 +1,13 @@
-import pprint
 import random
 from packets import Card, GameStateUpdate, CardPlaced, CardBurned, CardPull, InfoUsed, NextTurn
 
 
 class Deck:
+
+    """ A Class representation of a literal deck of cards from the game Hanabi. Cards have numbers and colors.
+    The game server generates a deck at the start. The players can pull cards out and the game state
+    can keep track of the number of cards left within the deck."""
+
     def __init__(self):
         # Store Card() objects:
         self.cards = []
@@ -20,8 +24,8 @@ class Deck:
 
         # Generate Cards:
         for col in self.colors:                             # For a given color col
-            for num in self.deck_dict.keys():               # For a given number num
-                for _ in range(self.deck_dict[num]):        # Generate a card a number of times given by deck_dict
+            for num, count in self.deck_dict.items():       # For a given number num
+                for _ in range(count):                      # Generate a card a number of times given by deck_dict
                     c = Card(col, num)
                     self.cards.append(c)
 
@@ -53,7 +57,8 @@ class Deck:
 
 class GameState:
     def __init__(self, n_players):
-        self.n_players = n_players
+        self.n_players = n_players                                  # Number of players
+        n_cards = 4                                                 # Number of cards in one player's hands
 
         self.deck = Deck()                                          # Cards still in the deck
         self.table_stash = dict.fromkeys(self.deck.colors, [])      # Cards placed on the table
@@ -71,8 +76,11 @@ class GameState:
 
             self.player_hands[player] = hand
 
-        self.current_player = 0
-        self.action_done = False   # To check if next player button is allowed.
+        # OR IN ONE LINE:
+        # self.player_hands = {player_id: {i: self.deck.pull_card() for i in range(4)} for player_id in range(n_players)}
+
+        self.current_player = 0                                     # Will only accept game state updates from this id.
+        self.action_done = False                                    # To check if next player button is allowed.
 
         self.info_points: int = 9
         self.life_points: int = 3
@@ -80,9 +88,9 @@ class GameState:
         self.started = False
         self.lost = False
 
-        self.send_GS = None
-
     def to_bytes(self, players):
+
+        """ This function converts the necessary game state variables into a DataPacket object from packets."""
 
         game_state_update = GameStateUpdate(started=self.started,
                                             players=players,
@@ -102,13 +110,12 @@ class GameState:
             self.lost = True
 
     def lose_info_point(self):
+        # Cannot use info points when 0
         self.info_points = max(self.info_points-1, 0)
 
     def add_info_point(self):
+        # Cannot get more info points than 9
         self.info_points = min(self.info_points+1, 9)
-
-    def print_deck(self):
-        pprint.pprint(self.deck.deck_state)
 
     def __str__(self):
         s = "GameState: \n"
@@ -117,9 +124,13 @@ class GameState:
         s += f"    Current Player: {self.current_player}\n"
 
     def update(self, event):
-        # Possible events: InfoUsed, CardBurned, CardPlaced, CardPull, NextTurn
-        # Returns True on successful update to GameState.       -> denotes 'changed = True' bool
-        # Returns False, when event request is not possible.    -> denotes 'changed = False' bool, no need to broadcast
+
+        """
+        Possible events: InfoUsed, CardBurned, CardPlaced, CardPull, NextTurn
+
+        Returns True on successful update to GameState.       -> denotes 'changed = True' bool
+        Returns False, when event request is not possible.    -> denotes 'changed = False' bool, no need to broadcast
+        """
 
         # Only accept events from the current player:
         if self.current_player != event.player:
