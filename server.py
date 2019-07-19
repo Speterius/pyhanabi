@@ -3,7 +3,7 @@ import pickle
 from settings import *
 from time import sleep
 from packets import ConnectionAttempt, ConnectionConfirmed
-from game_logic import GameState, Event
+from game_logic import GameState
 
 
 class Server:

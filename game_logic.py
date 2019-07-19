@@ -1,15 +1,6 @@
 import pprint
 import random
-from packets import *
-
-
-@dataclass
-class Card:
-    color: str
-    number: int
-
-    def get_card_data(self):
-        return self.color, self.number
+from packets import Card, GameStateUpdate, CardPlaced, CardBurned, CardPull, InfoUsed, NextTurn
 
 
 class Deck:
@@ -101,6 +92,9 @@ class GameState:
                                             info_points=self.info_points,
                                             life_points=self.life_points,
                                             current_player=self.current_player)
+
+        # Convert Cards to dicts
+        game_state_update.cards_to_dicts()
 
         return game_state_update.to_bytes()
 

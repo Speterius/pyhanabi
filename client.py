@@ -6,7 +6,6 @@ import sys
 from time import sleep
 from threading import Thread
 from packets import ConnectionAttempt, ConnectionConfirmed, GameStateUpdate
-from game_logic import Event
 from game_window import GameWindow
 
 
@@ -78,7 +77,6 @@ class Client:
                 game_window.player_name = data.user_name
 
                 print('>>>> Connection to server successful. Starting Threads:')
-                print('Game window think the connection is:', game_window.connection)
                 thread_receive.start()
             else:
                 print('Connection is not confirmed.')

@@ -2,24 +2,10 @@ import sys
 import json
 import pickle
 from dataclasses import dataclass
-from game_logic import Card
 
 ''' This module defines the data packets to be sent between the server and the clients.
-The base class DataPacket provides JSON serialization. The module variables can be used
-to match packet types with the __class__ Key.'''
-
-# Globals for type matching:
-# CON_ATTEMPT = 'ConnectionAttempt'
-# CON_CONFIRM = 'ConnectionConfirmed'
-# GS_UPDATE = 'GameStateUpdate'
-#
-# INFO_USED = 'InfoUsed'
-# CARD_PULL = 'CardPull'
-# CARD_PLACE = 'CardPlaced'
-# CARD_BURN = 'CardBurned'
-# NEXT_TURN = 'NextTurn'
-#
-# PLAYEREVENTS = [INFO_USED, CARD_PULL, CARD_BURN, CARD_PLACE, NEXT_TURN]
+The base class DataPacket provides JSON serialization. The Dict2Obj can convert the sent
+dictionaries back to their original DataPacket objects.'''
 
 
 class Dict2Obj(object):
@@ -29,7 +15,7 @@ class Dict2Obj(object):
 
 
 def get_events():
-    return []
+    return Event.__subclasses__()
 
 
 def load(packet):
@@ -58,6 +44,8 @@ class DataPacket:
         return obj_dict
 
     def to_json(self):
+        d = self.to_dict()
+        print(d)
         return json.dumps(self.to_dict())
 
     def to_bytes(self):
@@ -77,15 +65,43 @@ class ConnectionConfirmed(DataPacket):
 
 
 @dataclass
+class Card(dict):
+    color: str
+    number: int
+
+    def get_card_data(self):
+        return self.color, self.number
+
+
+@dataclass
 class GameStateUpdate(DataPacket):
     started: bool
     players: dict
+
     player_hands: dict
     table_stash: dict
     discard_pile: list
+
     info_points: int
     life_points: int
     current_player: int
+
+    def cards_to_dicts(self):
+
+        self.player_hands = {i: {ix: card.__dict__ for ix, card in hand.items()}
+                             for i, hand in self.player_hands.items()}
+
+        self.table_stash = {color: [card.__dict__ for card in card_lst]
+                            for color, card_lst in self.table_stash.items()}
+
+        self.discard_pile = [card.__dict__ for card in self.discard_pile]
+
+    def keys_to_ints(self):
+
+        self.players = {int(player_id): name for player_id, name in self.players.items()}
+
+        self.player_hands = {int(idx): {int(ix): card for ix, card in hand.items()}
+                             for idx, hand in self.player_hands.items()}
 
 
 class Event(DataPacket):

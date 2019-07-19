@@ -1,5 +1,8 @@
 import socketserver
 import packets
+import time
+from settings import *
+from game_logic import GameState
 
 
 class RequestHandler(socketserver.BaseRequestHandler):
@@ -20,26 +23,57 @@ class RequestHandler(socketserver.BaseRequestHandler):
             # If the data packet is a packets.ConnectionAttempt:
             if type(data) is packets.ConnectionAttempt:
 
-                    response = packets.ConnectionConfirmed(True, data.user_name, 5)
-                    self.request.send(response.to_bytes())
+                    if self.server.player_count < MAX_PLAYERS:
+
+                        # Store player in server's dictionary:
+                        player_id = self.server.player_count
+                        self.server.players[player_id] = data.user_name
+
+                        # Confirm:
+                        response = packets.ConnectionConfirmed(True, data.user_name, player_id)
+                        self.request.send(response.to_bytes())
+
+                        # Increase player count:
+                        self.server.player_count += 1
+
+                        # Wait a bit for the client to start threads and send the initial game state update:
+                        game_state_update = self.server.GS.to_bytes(self.server.players)
+                        time.sleep(0.2)
+                        self.request.send(game_state_update)
+
+                        continue
+
+                    else:
+
+                        # Deny connection:
+                        response = packets.ConnectionConfirmed(False, data.user_name, 999)
+                        self.request.send(response.to_bytes())
+
+                        return
 
             elif type(data) in packets.get_events():
-                pass
+                print('Updating Game State (...) \n pass')
 
     def finish(self):
         print(f'Disconnecting client with address: {self.client_address}!')
 
 
 class Server(socketserver.ThreadingTCPServer):
-    def __init__(self, server_address, request_handler):
-        super().__init__(server_address, request_handler)
-
+    def __init__(self, request_handler):
+        self.PORT = 10000
         self.BUFFERSIZE = 4096
+        super().__init__(('localhost', self.PORT), request_handler)
+
+        # Player connections:
+        self.player_count = 0
         self.players = {}
+
+        # Game State:
+        self.GS = GameState(MAX_PLAYERS)
 
 
 def main():
-    server = Server(('localhost', 10000), RequestHandler)
+    server = Server(RequestHandler)
     server.serve_forever()
     return 0
 

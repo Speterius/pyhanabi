@@ -1,8 +1,7 @@
 import arcade
-from packets import GameStateUpdate
+from packets import GameStateUpdate, CardPlaced, CardBurned, CardPull, InfoUsed, NextTurn
 from gui_elements import NameTab, TextButton, CardTab, CardTabList
 from settings import *
-from game_logic import CardPull, CardBurned, CardPlaced, NextTurn, InfoUsed
 
 
 # noinspection PyArgumentList
@@ -156,6 +155,10 @@ class GameWindow(arcade.Window):
 
             x = self.name_loc[location][0]
             y = self.name_loc[location][1]
+
+            print(player_id)
+            print(players)
+
             name = players[player_id]
 
             nametab = NameTab(center_x=x, center_y=y, text=name)
@@ -164,6 +167,8 @@ class GameWindow(arcade.Window):
         self.player_locations = player_locations
 
     def update_game_state(self, game_state_update: GameStateUpdate):
+
+        game_state_update.keys_to_ints()
 
         if self.GS is None:
             self.GS = game_state_update
