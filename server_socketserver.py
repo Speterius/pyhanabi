@@ -111,6 +111,7 @@ class Server(socketserver.ThreadingTCPServer):
         """ Send the GS game state to all the connected clients."""
 
         # print(f' >>>> Broadcasting: to {tuple(self.clients)}')
+        print(self.GS.__dict__)
         for client in tuple(self.clients):
             client.send_game_state(self.GS.to_bytes(self.players))
 

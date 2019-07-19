@@ -1,5 +1,5 @@
 import random
-from packets import Card, GameStateUpdate, CardPlaced, CardBurned, CardPull, InfoUsed, NextTurn
+from packets import GameStateUpdate, CardPlaced, CardBurned, CardPull, InfoUsed, NextTurn
 
 
 class Deck:
@@ -9,7 +9,7 @@ class Deck:
     can keep track of the number of cards left within the deck."""
 
     def __init__(self):
-        # Store Card() objects:
+        # Store card objects (dictionaries with fields color and number:
         self.cards = []
 
         # Structure of the deck:
@@ -26,7 +26,8 @@ class Deck:
         for col in self.colors:                             # For a given color col
             for num, count in self.deck_dict.items():       # For a given number num
                 for _ in range(count):                      # Generate a card a number of times given by deck_dict
-                    c = Card(col, num)
+                    c = {"color": col,
+                         "number": num}
                     self.cards.append(c)
 
         # Printable form of cards list:
@@ -50,9 +51,17 @@ class Deck:
     def get_cards_with_color(self, col):
         cards_with_color = []
         for card in self.cards:
-            if card.color == col:
+            if card["color"] == col:
                 cards_with_color.append(card)
         return cards_with_color
+
+
+class TableStashColumn(list):
+    def max(self):
+        try:
+            return max(self)
+        except ValueError:
+            return 0
 
 
 class GameState:
@@ -61,7 +70,8 @@ class GameState:
         n_cards = 4                                                 # Number of cards in one player's hands
 
         self.deck = Deck()                                          # Cards still in the deck
-        self.table_stash = dict.fromkeys(self.deck.colors, [])      # Cards placed on the table
+        self.table_stash = dict.fromkeys(self.deck.colors,
+                                         TableStashColumn())        # Cards placed on the table
         self.discard_pile = []                                      # Cards burned/discarded
 
         assert 2 <= n_players <= 4
@@ -163,7 +173,7 @@ class GameState:
             self.add_info_point()
 
             # Remove the card from the player's hand:
-            self.player_hands[event.player][event.card_position] = None
+            self.player_hands[event.player][event.card_position] = {"color": 'empty', "number": 0}
 
             # Add that card to the discard pile:
             self.discard_pile.append(event.card)
@@ -180,8 +190,17 @@ class GameState:
 
             # Check whether for this color, this number is correct:
             # If yes: -> add card to table stash;
-            if event.card.number == max(self.table_stash[event.card.color]) + 1:
-                self.table_stash[event.card.color].append(event.card)
+
+            # When the table stash is empty has to be handled differently:
+            # target_col = self.table_stash[event.card["color"]]
+            if event.card["number"] == self.table_stash[event.card["color"]].max() + 1:
+                print(event.card["color"])
+                print(self.table_stash[event.card["color"]])
+
+                self.table_stash = {key: [*lst, event.card] if event.card["color"] == key else lst
+                                    for key, lst in self.table_stash.items()}
+
+                #self.table_stash[event.card["color"]].append(event.card)
                 print('Correct card placement.')
 
             # If not: -> add card to discard pile and lose a life.
@@ -191,7 +210,7 @@ class GameState:
                 self.lose_life_point()
 
             # Take the card out of the player's hand:
-            self.player_hands[event.player][event.card_position] = None
+            self.player_hands[event.player][event.card_position] = {"color": 'empty', "number": 0}
 
             # Did a valid action this turn:
             self.action_done = True
@@ -203,8 +222,8 @@ class GameState:
         elif type(event) is CardPull:
 
             # Search for the empty slot in a player's hand and pull a card into it:
-            for card_position in self.player_hands[event.player].keys():
-                if self.player_hands[event.player][card_position] is None:
+            for card_position, card in self.player_hands[event.player].items():
+                if card["color"] == "empty":
                     self.player_hands[event.player][card_position] = self.deck.pull_card()
 
                     # Successful Card Pull and update to GameState:

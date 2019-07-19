@@ -1,7 +1,6 @@
 import arcade
 import os
 from arcade.draw_commands import load_texture
-from game_logic import Card
 from settings import *
 import typing
 
@@ -14,11 +13,8 @@ def hex_to_rgb(h):
 
 class CardTab(arcade.Sprite):
     def __init__(self, card, loc, index, self_card=False):
-        # assert type(card) == Card
-        # assert loc in ['bot', 'left', 'top', 'right']
-        # assert 0 <= index <= 3
 
-        self.card = card                            # Card() object with color and number
+        self.card = card                            # dict object with color and number
         self.location = CARD_LOCATIONS[loc][index]  # Global settings for the locations
         self.index = index                          # Store index
         self.x = self.location[0]                   # Card Tab location x

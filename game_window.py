@@ -4,19 +4,19 @@ from gui_elements import NameTab, TextButton, CardTab, CardTabList
 from settings import *
 
 
-# noinspection PyArgumentList
 class GameWindow(arcade.Window):
     def __init__(self, client):
         super().__init__(width=SCREEN_WIDTH, height=SCREEN_HEIGHT, title=SCREEN_TITLE)
         arcade.set_background_color(arcade.color.AMAZON)
-        # Client used to send events to the server and to receive GS (GameState) updates.
-        self.client = client
-        self.GS = None
-        self.connection: bool = False
-        self.player_name: str = None
-        self.player_id: int = None
 
-        # GUI Elements
+        self.client = client            # Client used to send events to the server and to receive game state updates.
+        self.GS = None                  # Current game state
+
+        self.connection: bool = False   # Server connection
+        self.player_name: str = ""      # Player's name
+        self.player_id = None           # Player's integer id assigned by the server
+
+        # GUI Elements:
         self.shapes = arcade.ShapeElementList()
         self.center_x = int(SCREEN_WIDTH/2)
         self.center_y = int(SCREEN_HEIGHT/2)
@@ -31,7 +31,6 @@ class GameWindow(arcade.Window):
                          'left': (int(NAME_WIDTH/2), self.third_line_y),
                          'top': (self.center_x, int(SCREEN_HEIGHT-NAME_HEIGHT/2)),
                          'right': (int(SCREEN_WIDTH-NAME_WIDTH/2), self.third_line_y)}
-
         self.player_locations = {}                                              # KEY: int   VALUE: (x, y)
 
         # Buttons:
@@ -56,8 +55,22 @@ class GameWindow(arcade.Window):
                                     text='Place',
                                     action_function=self.place_btn_click,
                                     face_color=arcade.color.BLOND)
+        self.pull_btn = TextButton(center_x=BUTTON_WIDTH / 2 + MARGIN,
+                                   center_y=BUTTON_HEIGHT / 2 + MARGIN,
+                                   width=BUTTON_WIDTH,
+                                   height=BUTTON_HEIGHT,
+                                   text='PULL',
+                                   action_function=self.pull_btn_click,
+                                   face_color=arcade.color.ORANGE)
+        self.next_btn = TextButton(center_x=3 * BUTTON_WIDTH / 2 + 2 * MARGIN,
+                                   center_y=BUTTON_HEIGHT / 2 + MARGIN,
+                                   width=BUTTON_WIDTH,
+                                   height=BUTTON_HEIGHT,
+                                   text='NEXT',
+                                   action_function=self.next_btn_click,
+                                   face_color=arcade.color.BARBIE_PINK)
 
-        self.buttons = [self.info_btn, self.burn_btn, self.place_btn]
+        self.buttons = [self.info_btn, self.burn_btn, self.place_btn, self.pull_btn, self.next_btn]
 
         # Cards:
         self.cards_generated = False
@@ -284,10 +297,10 @@ class GameWindow(arcade.Window):
         else:
             print('Select card first.')
 
-    def pull_card_click(self):
+    def pull_btn_click(self):
         event = CardPull(self.player_id)
         self.client.send_game_event(event.to_bytes())
 
-    def next_turn_click(self):
+    def next_btn_click(self):
         event = NextTurn(self.player_id)
         self.client.send_game_event(event.to_bytes())

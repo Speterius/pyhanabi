@@ -64,15 +64,6 @@ class ConnectionConfirmed(DataPacket):
 
 
 @dataclass
-class Card:
-    color: str
-    number: int
-
-    def get_card_data(self):
-        return self.color, self.number
-
-
-@dataclass
 class GameStateUpdate(DataPacket):
     started: bool
     players: dict
@@ -85,15 +76,15 @@ class GameStateUpdate(DataPacket):
     life_points: int
     current_player: int
 
-    def cards_to_dicts(self):
-
-        self.player_hands = {i: {ix: card.__dict__ for ix, card in hand.items()}
-                             for i, hand in self.player_hands.items()}
-
-        self.table_stash = {color: [card.__dict__ for card in card_lst]
-                            for color, card_lst in self.table_stash.items()}
-
-        self.discard_pile = [card.__dict__ for card in self.discard_pile]
+    # def cards_to_dicts(self):
+    #
+    #     self.player_hands = {i: {ix: card.__dict__ for ix, card in hand.items()}
+    #                          for i, hand in self.player_hands.items()}
+    #
+    #     self.table_stash = {color: [card.__dict__ for card in card_lst]
+    #                         for color, card_lst in self.table_stash.items()}
+    #
+    #     self.discard_pile = [card.__dict__ for card in self.discard_pile]
 
     def keys_to_ints(self):
 
@@ -101,13 +92,6 @@ class GameStateUpdate(DataPacket):
 
         self.player_hands = {int(idx): {int(ix): card for ix, card in hand.items()}
                              for idx, hand in self.player_hands.items()}
-
-    def to_bytes(self):
-
-        # Convert Cards to dicts
-        self.cards_to_dicts()
-        return super().to_bytes()
-
 
 @dataclass
 class Event(DataPacket):
@@ -131,11 +115,11 @@ class NextTurn(Event):
 
 @dataclass
 class CardBurned(Event):
-    card: Card
+    card: dict
     card_position: int
 
 
 @dataclass
 class CardPlaced(Event):
-    card: Card
+    card: dict
     card_position: int

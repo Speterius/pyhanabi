@@ -56,8 +56,11 @@ class Client:
         The state updates are forwarded to the game GUI. """
 
         while True:
-            data = self.sock.recv(self.BUFFERSIZE)
-
+            try:
+                data = self.sock.recv(self.BUFFERSIZE)
+            except ConnectionAbortedError as ex:
+                print('Server connection was aborted. Quitting for now. Exception thrown:', ex)
+                return
             if not data:
                 continue
 
