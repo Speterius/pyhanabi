@@ -85,6 +85,7 @@ class Server:
         while True:
             # 1) Listen to player events:
             try:
+                # todo some kind of race condition here
                 data = self.receive_packet(self.client_sockets_rec[self.listening_to])
             except KeyError:
                 print("Received data:", data, f'from {self.players[self.listening_to]}')
