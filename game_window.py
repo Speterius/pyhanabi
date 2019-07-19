@@ -1,4 +1,5 @@
 import arcade
+import time
 from packets import GameStateUpdate, CardPlaced, CardBurned, CardPull, InfoUsed, NextTurn
 from gui_elements import NameTab, TextButton, CardTab, CardTabList
 from settings import *
@@ -75,8 +76,19 @@ class GameWindow(arcade.Window):
         # Cards:
         self.cards_generated = False
         self.card_tab_list = CardTabList()          # Card Tab arcade.Spritelist
-
         self.selected_card_tab = None
+
+        # Message Pop-up:
+        self.message_text = None        # text to display as a message
+        self.message_timer = None       # time of the message popup start
+        self.message_duration = 2.0     # seconds for the message to disappear
+
+        # Some game state logic on the client side:
+        self.action_done = False
+
+        # Keep track of the top card in the discard pile and the number of cards here to keep track.
+        self.discard_pile_card_tabs_top = None
+        self.discard_pile_size = 0
 
     def generate_gradient_background(self):
         color1 = (26, 15, 35)
@@ -135,6 +147,9 @@ class GameWindow(arcade.Window):
                 l, r, t, b = self.selected_card_tab.get_lrtb()
                 arcade.draw_lrtb_rectangle_outline(l, r, t, b, arcade.color.WHITE, border_width=2)
 
+            # 7) Display message:
+            self.draw_message()
+
             try:
                 if self.GS.started:
                     arcade.draw_text('The game has started', SCREEN_WIDTH/4, SCREEN_HEIGHT/4, arcade.color.WHITE)
@@ -156,6 +171,12 @@ class GameWindow(arcade.Window):
             for card_index, card in player_hands[player_id].items():
                 card_tab = CardTab(card=card, loc=loc, index=card_index, self_card=self_card)
                 self.card_tab_list.append(card_tab)
+
+    def has_four_cards(self):
+        for idx, card in self.GS.player_hands[self.player_id].items():
+            if card["color"] == "empty":
+                return False
+        return True
 
     def update_name_tabs(self, players):
 
@@ -183,8 +204,6 @@ class GameWindow(arcade.Window):
 
     def update_game_state(self, game_state_update: GameStateUpdate):
 
-        # game_state_update.keys_to_ints()
-
         if self.GS is None:
             self.GS = game_state_update
             self.update_name_tabs(game_state_update.players)
@@ -196,6 +215,7 @@ class GameWindow(arcade.Window):
 
         # If we are already playing:
         if game_state_update.started:
+
             # Make the card tabs at the start of the game.
             if not self.cards_generated:
                 self.generate_card_tabs(game_state_update.player_hands)
@@ -208,13 +228,12 @@ class GameWindow(arcade.Window):
                 else:
                     nametab.set_highlight(False)
 
-            # todo: update card tabs
+            # todo: update the card tabs. Make sure they are in sync with server game state
 
             # todo: update discard pile
+            self.discard_pile_size = len(game_state_update.discard_pile)
 
             # todo: update table stash
-
-            # todo: update info point and life point texts
 
         # Update the current GS object.
         self.GS = game_state_update
@@ -225,12 +244,12 @@ class GameWindow(arcade.Window):
             Returns None for both if nothing is selected. """
 
         if self.selected_card_tab is None:
-            return None, None
+            return None, None, None
 
         card = self.selected_card_tab.card
         card_position = self.selected_card_tab.index
 
-        return card, card_position
+        return card, card_position, self.selected_card_tab
 
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
         for b in self.buttons:
@@ -259,8 +278,7 @@ class GameWindow(arcade.Window):
         if not released_on_card:
             self.filter_selections()
 
-        _, index = self.get_card_selection()
-        print(f'Card selected: {index}')
+        _, index, _ = self.get_card_selection()
 
     def filter_selections(self, exception=None):
         for i, c in enumerate(self.card_tab_list):
@@ -268,49 +286,119 @@ class GameWindow(arcade.Window):
                 self.selected_card_tab = c
             else:
                 c.set_selection(False)
+        if exception is None:
+            self.selected_card_tab = None
 
-    def on_key_press(self, symbol, modifiers):
-        if symbol == arcade.key.Q:
-            print('Q')
+    def _player_event(btn_click):
+        """ This is a decorator for all player events to check whether it is the player's turn"""
+        def check_current_player(self):
 
-    def on_key_release(self, key, modifiers):
-        print('KEY RELEASE!')
-    #
-    #
-    # PLAYER EVENTS:
-    #
-    # _____________
+            if self.player_id != self.GS.current_player:
+                self.show_message('Not your turn.')
+                return
 
+            btn_click(self)
+
+        return check_current_player
+
+    def _player_action(btn_click):
+        """ This is a decorator for the three action events that can only be done once per turn. """
+        def check_action_done(self):
+
+            if self.action_done:
+                self.show_message('Already did your action. Click NEXT or PULL card.')
+                return
+
+            btn_click(self)
+
+        return check_action_done
+
+    def _uses_card(btn_click):
+        """ This is a decorator for the two action events that needs a valid card selection."""
+        def check_card_selection(self):
+
+            card, card_position, _ = self.get_card_selection()
+            if card is not None and card_position is not None:
+
+                btn_click(self, card, card_position)
+
+            else:
+                self.show_message('Select a card before using BURN.')
+
+        return check_card_selection
+
+    @_player_event
+    @_player_action
     def info_btn_click(self):
+
+        """ Player event: When the INFO button is clicked."""
+
         event = InfoUsed(self.player_id)
         self.client.send_game_event(event.to_bytes())
 
-    def burn_btn_click(self):
-        card, card_position = self.get_card_selection()
+        self.action_done = True
 
-        if card is not None and card_position is not None:
+    @_player_event
+    @_player_action
+    @_uses_card
+    def burn_btn_click(self, card=None, card_position=None):
 
-            event = CardBurned(self.player_id, card, card_position)
-            self.client.send_game_event(event.to_bytes())
+        """ Player event: When the BURN button is clicked."""
 
-        else:
-            print('Select card first.')
+        event = CardBurned(self.player_id, card, card_position)
+        self.client.send_game_event(event.to_bytes())
 
-    def place_btn_click(self):
-        card, card_position = self.get_card_selection()
+        self.action_done = True
 
-        if card is not None and card_position is not None:
+    @_player_event
+    @_player_action
+    @_uses_card
+    def place_btn_click(self, card=None, card_position=None):
 
-            event = CardPlaced(self.player_id, card, card_position)
-            self.client.send_game_event(event.to_bytes())
+        """ Player event: When the PLACE button is clicked."""
 
-        else:
-            print('Select card first.')
+        event = CardPlaced(self.player_id, card, card_position)
+        self.client.send_game_event(event.to_bytes())
 
+        self.action_done = True
+
+    @_player_event
     def pull_btn_click(self):
+
+        """ Player event: When the PULL button is clicked."""
+        if self.has_four_cards():
+            self.show_message('You already have all cards.')
+            return
+
         event = CardPull(self.player_id)
         self.client.send_game_event(event.to_bytes())
 
+    @_player_event
     def next_btn_click(self):
+
+        """ Player event: When the NEXT button is clicked."""
+
+        if not self.has_four_cards():
+            self.show_message('Pull a card before clicking NEXT.')
+            return
+
         event = NextTurn(self.player_id)
         self.client.send_game_event(event.to_bytes())
+
+        self.action_done = False
+
+    def show_message(self, text):
+        self.message_text = text
+        self.message_timer = time.time()
+
+    def draw_message(self):
+        if self.message_text is not None:
+            if time.time() - self.message_timer < self.message_duration:
+                arcade.draw_text(self.message_text,
+                                 SCREEN_WIDTH / 2,
+                                 SCREEN_HEIGHT / 2,
+                                 arcade.color.YELLOW, 15,
+                                 align="center", anchor_x='center', anchor_y='center')
+            else:
+                self.message_text = None
+                self.message_timer = None

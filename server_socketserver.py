@@ -1,5 +1,6 @@
 import socketserver
 import packets
+import pprint
 import time
 from settings import *
 from game_logic import GameState
@@ -72,8 +73,6 @@ class RequestHandler(socketserver.StreamRequestHandler):
                     return
 
             elif type(data) in packets.get_events():
-                print('Updating Game State (...) \n pass')
-
                 self.server.update_game_state(event=data)
                 self.server.broadcast_game_state_update()
 
@@ -110,8 +109,8 @@ class Server(socketserver.ThreadingTCPServer):
 
         """ Send the GS game state to all the connected clients."""
 
-        # print(f' >>>> Broadcasting: to {tuple(self.clients)}')
-        print(self.GS.__dict__)
+        pprint.pprint(self.GS.__dict__)
+
         for client in tuple(self.clients):
             client.send_game_state(self.GS.to_bytes(self.players))
 

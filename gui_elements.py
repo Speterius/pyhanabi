@@ -1,8 +1,8 @@
 import arcade
 import os
-from arcade.draw_commands import load_texture
-from settings import *
 import typing
+from settings import *
+
 
 PARENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -33,8 +33,8 @@ class CardTab(arcade.Sprite):
 
         # Load sprite with additional question mark texture
         super().__init__(filename=filepath, scale=self.original_scale, center_x=self.x, center_y=self.y)
-        question_mark_texture = load_texture(os.path.join(assets_path, filename_question_mark),
-                                             scale=self.original_scale)
+        question_mark_texture = arcade.draw_commands.load_texture(os.path.join(assets_path, filename_question_mark),
+                                                                  scale=self.original_scale)
         self.append_texture(question_mark_texture)
         self._set_scale(self.original_scale)
 
@@ -80,6 +80,8 @@ class CardTab(arcade.Sprite):
         bottom = super()._get_bottom()
         return left, right, top, bottom
 
+    def my_set_scale(self, scale):
+        self._set_scale(scale)
 
 # This is for type hinting to also accept CardTab instances and not just Sprites.
 T = typing.TypeVar('T', bound=CardTab)
