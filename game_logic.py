@@ -93,9 +93,6 @@ class GameState:
                                             life_points=self.life_points,
                                             current_player=self.current_player)
 
-        # Convert Cards to dicts
-        game_state_update.cards_to_dicts()
-
         return game_state_update.to_bytes()
 
     def lose_life_point(self):

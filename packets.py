@@ -44,8 +44,7 @@ class DataPacket:
         return obj_dict
 
     def to_json(self):
-        d = self.to_dict()
-        print(d)
+        # d = self.to_dict()
         return json.dumps(self.to_dict())
 
     def to_bytes(self):
@@ -65,7 +64,7 @@ class ConnectionConfirmed(DataPacket):
 
 
 @dataclass
-class Card(dict):
+class Card:
     color: str
     number: int
 
@@ -102,6 +101,12 @@ class GameStateUpdate(DataPacket):
 
         self.player_hands = {int(idx): {int(ix): card for ix, card in hand.items()}
                              for idx, hand in self.player_hands.items()}
+
+    def to_bytes(self):
+
+        # Convert Cards to dicts
+        self.cards_to_dicts()
+        return super().to_bytes()
 
 
 class Event(DataPacket):

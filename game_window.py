@@ -156,9 +156,6 @@ class GameWindow(arcade.Window):
             x = self.name_loc[location][0]
             y = self.name_loc[location][1]
 
-            print(player_id)
-            print(players)
-
             name = players[player_id]
 
             nametab = NameTab(center_x=x, center_y=y, text=name)
@@ -168,7 +165,7 @@ class GameWindow(arcade.Window):
 
     def update_game_state(self, game_state_update: GameStateUpdate):
 
-        game_state_update.keys_to_ints()
+        # game_state_update.keys_to_ints()
 
         if self.GS is None:
             self.GS = game_state_update

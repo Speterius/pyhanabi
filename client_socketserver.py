@@ -54,7 +54,7 @@ class Client:
             data = packets.load(data)
 
             if type(data) is packets.GameStateUpdate:
-                print(data)
+                data.keys_to_ints()
                 game_window.update_game_state(data)
             else:
                 print(f'receiving non-GameState broadcast with type: {type(data)}')

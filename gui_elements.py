@@ -18,7 +18,7 @@ class CardTab(arcade.Sprite):
         # assert loc in ['bot', 'left', 'top', 'right']
         # assert 0 <= index <= 3
 
-        self.card: Card = card                            # Card() object with color and number
+        self.card = card                            # Card() object with color and number
         self.location = CARD_LOCATIONS[loc][index]  # Global settings for the locations
         self.index = index                          # Store index
         self.x = self.location[0]                   # Card Tab location x
@@ -29,7 +29,9 @@ class CardTab(arcade.Sprite):
 
         # Get filepaths for the assets
         assets_path = os.path.join(PARENT_DIR, 'assets')
-        filename = f'{self.card.color}_{self.card.number}.png'
+        self.col = card["color"]
+        self.num = card["number"]
+        filename = f'{self.col}_{self.num}.png'
         filename_question_mark = "question_mark.png"
         filepath = os.path.join(assets_path, filename)
 
