@@ -1,5 +1,5 @@
 import arcade
-from data_packets import GameStateUpdate
+from packets import GameStateUpdate
 from gui_elements import NameTab, TextButton, CardTab, CardTabList
 from settings import *
 from game_logic import CardPull, CardBurned, CardPlaced, NextTurn, InfoUsed

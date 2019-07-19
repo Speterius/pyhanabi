@@ -2,7 +2,7 @@ from socket import socket, AF_INET, SOCK_STREAM
 import pickle
 from settings import *
 from time import sleep
-from data_packets import ConnectionAttempt, ConnectionConfirmed
+from packets import ConnectionAttempt, ConnectionConfirmed
 from game_logic import GameState, Event
 
 

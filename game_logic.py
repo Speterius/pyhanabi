@@ -1,8 +1,6 @@
-import pickle
 import pprint
-from dataclasses import dataclass
 import random
-from data_packets import GameStateUpdate
+from packets import *
 
 
 @dataclass
@@ -62,39 +60,6 @@ class Deck:
         return cards_with_color
 
 
-@dataclass
-class Event:
-    player: int
-
-    def to_json(self):
-        pass
-
-    def to_packet(self):
-        return pickle.dumps(self)
-
-
-class InfoUsed(Event):
-    pass
-
-
-class CardBurned(Event):
-    card: Card
-    card_position: int
-
-
-class CardPlaced(Event):
-    card: Card
-    card_position: int
-
-
-class CardPull(Event):
-    pass
-
-
-class NextTurn(Event):
-    pass
-
-
 class GameState:
     def __init__(self, n_players):
         self.n_players = n_players
@@ -126,7 +91,7 @@ class GameState:
 
         self.send_GS = None
 
-    def to_packet(self, players):
+    def to_bytes(self, players):
 
         game_state_update = GameStateUpdate(started=self.started,
                                             players=players,
@@ -137,7 +102,7 @@ class GameState:
                                             life_points=self.life_points,
                                             current_player=self.current_player)
 
-        return game_state_update.to_pickle()
+        return game_state_update.to_bytes()
 
     def lose_life_point(self):
         self.life_points -= 1

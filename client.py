@@ -5,7 +5,7 @@ from socket import socket, AF_INET, SOCK_STREAM
 import sys
 from time import sleep
 from threading import Thread
-from data_packets import ConnectionAttempt, ConnectionConfirmed, GameStateUpdate
+from packets import ConnectionAttempt, ConnectionConfirmed, GameStateUpdate
 from game_logic import Event
 from game_window import GameWindow
 
@@ -67,7 +67,6 @@ class Client:
             self.sock_push.sendall(con_attempt)
 
             data = self.receive_packet()
-            print('received packed:', type(data))
 
             if type(data) is ConnectionConfirmed and data.confirmed:
                 self.connected = True
