@@ -59,8 +59,12 @@ class Client:
             try:
                 data = self.sock.recv(self.BUFFERSIZE)
             except ConnectionAbortedError as ex:
-                print('Server connection was aborted. Quitting for now. Exception thrown:', ex)
-                return
+                print('Server connection was lost. Quitting for now. Exception thrown:', ex)
+                return -1
+            except ConnectionResetError as ex:
+                print('Server connection was lost. Quitting for now. Exception thrown:', ex)
+                return -1
+
             if not data:
                 continue
 
@@ -75,7 +79,7 @@ class Client:
     def send_game_event(self, event):
 
         """ Forwards a player event to the game server. """
-
+        print("Sending Event:", event)
         self.sock.send(event)
 
 

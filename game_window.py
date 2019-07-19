@@ -120,15 +120,20 @@ class GameWindow(arcade.Window):
 
             # 4) Texts
             arcade.draw_text(f'INFO POINTS: {self.GS.info_points}',
-                             SCREEN_WIDTH - 100, SCREEN_HEIGHT / 2, arcade.color.WHITE, 14,
+                             SCREEN_WIDTH - 100, SCREEN_HEIGHT / 2 - 50, arcade.color.WHITE, 14,
                              align="center", anchor_x='center', anchor_y='center')
 
             arcade.draw_text(f'LIFE POINTS: {self.GS.life_points}',
-                             SCREEN_WIDTH - 100, SCREEN_HEIGHT / 2 - 50, arcade.color.WHITE, 14,
+                             SCREEN_WIDTH - 70, SCREEN_HEIGHT / 2 - 100, arcade.color.WHITE, 14,
                              align="center", anchor_x='center', anchor_y='center')
 
             # 5) Draw Cards
             self.card_tab_list.draw()
+
+            # 6) draw highlights:
+            if self.selected_card_tab is not None:
+                l, r, t, b = self.selected_card_tab.get_lrtb()
+                arcade.draw_lrtb_rectangle_outline(l, r, t, b, arcade.color.WHITE, border_width=2)
 
             try:
                 if self.GS.started:
@@ -216,6 +221,9 @@ class GameWindow(arcade.Window):
 
     def get_card_selection(self):
 
+        """ Return the card dict and the index of the card that is being selected.
+            Returns None for both if nothing is selected. """
+
         if self.selected_card_tab is None:
             return None, None
 
@@ -239,19 +247,25 @@ class GameWindow(arcade.Window):
             if b.pressed:
                 b.on_release()
 
+        released_on_card = []
         for i, c in enumerate(self.card_tab_list):
             if c.self_card and c.currently_pressed:
-
+                released_on_card.append(1)
                 c.on_release()
 
                 if c.selected:
-                    self.selected_card_tab = c
-                    self.delete_other_selections(selection=i)
+                    self.filter_selections(exception=i)
 
-    def delete_other_selections(self, selection):
+        if not released_on_card:
+            self.filter_selections()
+
+        _, index = self.get_card_selection()
+        print(f'Card selected: {index}')
+
+    def filter_selections(self, exception=None):
         for i, c in enumerate(self.card_tab_list):
-            if i == selection:
-                continue
+            if i == exception:
+                self.selected_card_tab = c
             else:
                 c.set_selection(False)
 
@@ -268,11 +282,7 @@ class GameWindow(arcade.Window):
     # _____________
 
     def info_btn_click(self):
-        print("clicked info button")
-        print(self.player_id)
         event = InfoUsed(self.player_id)
-
-        print("sending event:", event)
         self.client.send_game_event(event.to_bytes())
 
     def burn_btn_click(self):

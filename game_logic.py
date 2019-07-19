@@ -182,7 +182,8 @@ class GameState:
             self.action_done = True
 
             # Successful Update of GameState:
-            print('Card burned, info gained.')
+            print(f'Card burned: {event.card}, info gained.')
+
             return True
 
         # When a player places a card on the table:
@@ -190,24 +191,20 @@ class GameState:
 
             # Check whether for this color, this number is correct:
             # If yes: -> add card to table stash;
-
-            # When the table stash is empty has to be handled differently:
-            # target_col = self.table_stash[event.card["color"]]
             if event.card["number"] == self.table_stash[event.card["color"]].max() + 1:
-                print(event.card["color"])
-                print(self.table_stash[event.card["color"]])
 
                 self.table_stash = {key: [*lst, event.card] if event.card["color"] == key else lst
                                     for key, lst in self.table_stash.items()}
 
-                #self.table_stash[event.card["color"]].append(event.card)
-                print('Correct card placement.')
+                print(f'Correct card placed: {event.card}')
 
             # If not: -> add card to discard pile and lose a life.
             else:
-                print('Wrong card placement, life lost')
+
                 self.discard_pile.append(event.card)
                 self.lose_life_point()
+
+                print('Wrong card placement, life lost')
 
             # Take the card out of the player's hand:
             self.player_hands[event.player][event.card_position] = {"color": 'empty', "number": 0}

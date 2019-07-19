@@ -63,9 +63,7 @@ class CardTab(arcade.Sprite):
 
     def on_release(self):
         self.currently_pressed = False
-        self.selected = not self.selected
-
-        self.set_selection(self.selected)
+        self.set_selection(True)
 
     def set_selection(self, foo: bool):
         self.selected = foo
@@ -74,6 +72,13 @@ class CardTab(arcade.Sprite):
             self._set_scale(self.selection_scale)
         else:
             self._set_scale(self.original_scale)
+
+    def get_lrtb(self):
+        left = super()._get_left()
+        right = super()._get_right()
+        top = super()._get_top()
+        bottom = super()._get_bottom()
+        return left, right, top, bottom
 
 
 # This is for type hinting to also accept CardTab instances and not just Sprites.
