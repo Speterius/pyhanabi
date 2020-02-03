@@ -202,6 +202,10 @@ class GameWindow(arcade.Window):
 
         self.player_locations = player_locations
 
+    def game_state_cards_diff(self, new):
+        """ This method compares the old and the new game state to update the cards."""
+        pass
+
     def update_game_state(self, game_state_update: GameStateUpdate):
 
         if self.GS is None:
@@ -213,27 +217,30 @@ class GameWindow(arcade.Window):
         if len(self.GS.players) != len(game_state_update.players):
             self.update_name_tabs(game_state_update.players)
 
-        # If we are already playing:
-        if game_state_update.started:
+        # If the game hasn't started yet, finish the update and return.
+        if not game_state_update.started:
+            # Update the current GS object.
+            self.GS = game_state_update
+            return
 
-            # Make the card tabs at the start of the game.
-            if not self.cards_generated:
-                self.generate_card_tabs(game_state_update.player_hands)
-                self.cards_generated = True
+        # 0) Make the card tabs at the start of the game.
+        if not self.cards_generated:
+            self.generate_card_tabs(game_state_update.player_hands)
+            self.cards_generated = True
 
-            # Highlight the player name tab whose turn it is:
-            for player_id, nametab in self.name_tabs.items():
-                if player_id == game_state_update.current_player:
-                    nametab.set_highlight(True)
-                else:
-                    nametab.set_highlight(False)
+        # 1) Highlight the player name tab whose turn it is:
+        for player_id, nametab in self.name_tabs.items():
+            if player_id == game_state_update.current_player:
+                nametab.set_highlight(True)
+            else:
+                nametab.set_highlight(False)
 
-            # todo: update the card tabs. Make sure they are in sync with server game state
+        # 2) Create a diff between current game state and new game state
 
-            # todo: update discard pile
-            self.discard_pile_size = len(game_state_update.discard_pile)
+        # 3) Update the card tabs according to the diff
 
-            # todo: update table stash
+        # 4)
+        self.discard_pile_size = len(game_state_update.discard_pile)
 
         # Update the current GS object.
         self.GS = game_state_update
@@ -289,18 +296,22 @@ class GameWindow(arcade.Window):
         if exception is None:
             self.selected_card_tab = None
 
+    # noinspection PyMethodParameters
     def _player_event(btn_click):
         """ This is a decorator for all player events to check whether it is the player's turn"""
+
         def check_current_player(self):
 
             if self.player_id != self.GS.current_player:
                 self.show_message('Not your turn.')
                 return
 
+            # noinspection PyCallingNonCallable
             btn_click(self)
 
         return check_current_player
 
+    # noinspection PyMethodParameters
     def _player_action(btn_click):
         """ This is a decorator for the three action events that can only be done once per turn. """
         def check_action_done(self):
@@ -309,10 +320,12 @@ class GameWindow(arcade.Window):
                 self.show_message('Already did your action. Click NEXT or PULL card.')
                 return
 
+            # noinspection PyCallingNonCallable
             btn_click(self)
 
         return check_action_done
 
+    # noinspection PyMethodParameters
     def _uses_card(btn_click):
         """ This is a decorator for the two action events that needs a valid card selection."""
         def check_card_selection(self):
@@ -320,10 +333,11 @@ class GameWindow(arcade.Window):
             card, card_position, _ = self.get_card_selection()
             if card is not None and card_position is not None:
 
+                # noinspection PyCallingNonCallable
                 btn_click(self, card, card_position)
 
             else:
-                self.show_message('Select a card before using BURN.')
+                self.show_message('Select a card before using PLACE or BURN.')
 
         return check_card_selection
 

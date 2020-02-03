@@ -83,6 +83,7 @@ class CardTab(arcade.Sprite):
     def my_set_scale(self, scale):
         self._set_scale(scale)
 
+
 # This is for type hinting to also accept CardTab instances and not just Sprites.
 T = typing.TypeVar('T', bound=CardTab)
 

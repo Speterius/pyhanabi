@@ -76,22 +76,13 @@ class GameStateUpdate(DataPacket):
     life_points: int
     current_player: int
 
-    # def cards_to_dicts(self):
-    #
-    #     self.player_hands = {i: {ix: card.__dict__ for ix, card in hand.items()}
-    #                          for i, hand in self.player_hands.items()}
-    #
-    #     self.table_stash = {color: [card.__dict__ for card in card_lst]
-    #                         for color, card_lst in self.table_stash.items()}
-    #
-    #     self.discard_pile = [card.__dict__ for card in self.discard_pile]
-
     def keys_to_ints(self):
 
         self.players = {int(player_id): name for player_id, name in self.players.items()}
 
         self.player_hands = {int(idx): {int(ix): card for ix, card in hand.items()}
                              for idx, hand in self.player_hands.items()}
+
 
 @dataclass
 class Event(DataPacket):
