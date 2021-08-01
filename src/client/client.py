@@ -1,7 +1,6 @@
 import arcade
-import names
-import packets
-from game_window import GameWindow
+from client import packets
+from game.game_window import GameWindow
 from threading import Thread
 from socket import socket, AF_INET, SOCK_STREAM
 
