@@ -1,8 +1,8 @@
-import arcade
-from client import packets
+from common import packets
 from game.game_window import GameWindow
 from threading import Thread
 from socket import socket, AF_INET, SOCK_STREAM
+from typing import Tuple
 
 
 class Client:
@@ -10,9 +10,9 @@ class Client:
     """ Handles TCP connection to the game Server. After a connection handshake:
     -> Starts a thread that listens to game state updates and communicates with the GUI. """
 
-    def __init__(self, user_name='DefaultPlayerName'):
+    def __init__(self, user_name: str = 'DefaultPlayerName', server_adress: Tuple[str, int] = ("localhost", 10000)):
         self.user_name = user_name
-        self.server_address = ('localhost', 10000)
+        self.server_address = server_adress
 
         self.BUFFERSIZE = 4096
         self.sock = socket(AF_INET, SOCK_STREAM)
@@ -73,26 +73,3 @@ class Client:
         """ Forwards a player event to the game server. """
 
         self.sock.send(event)
-
-
-def main():
-
-    # Instantaiate client and game GUI objects:
-    client = Client(user_name=names.get_first_name())
-    game_window = GameWindow(client=client)
-
-    # Communicate with server on separate threads:
-    thread_receive = Thread(target=client.receive_game_state_broadcast, args=(game_window, ), daemon=True)
-    thread_connect = Thread(target=client.connect_to_server, args=(game_window, thread_receive), daemon=True)
-
-    # The receive thread will be started once the connect thread is successful.
-    thread_connect.start()
-
-    # Run the arcade game engine
-    arcade.run()
-
-    return 0
-
-
-if __name__ == '__main__':
-    main()

@@ -1,9 +1,8 @@
-from .tcp_server import TCPServer
-from .request_handler import RequestHandler
+from server.tcp_server import TCPServer
 
 
 def main():
-    server = TCPServer(RequestHandler)
+    server = TCPServer(server_address=('localhost', 10000))
     print('Waiting for connections...')
     server.serve_forever()
     return 0

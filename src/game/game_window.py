@@ -1,20 +1,20 @@
 import arcade
-from packets import GameStateUpdate, CardPlaced, CardBurned, CardPull, InfoUsed, NextTurn
-from gui_elements import NameTab, TextButton, CardTab, CardTabList
-from settings import *
+from common.packets import GameStateUpdate, CardPlaced, CardBurned, CardPull, InfoUsed, NextTurn
+from game.gui_elements import NameTab, TextButton, CardTab, CardTabList
+from game.game_settings import *
+from typing import Optional
 
 
-# noinspection PyArgumentList
 class GameWindow(arcade.Window):
     def __init__(self, client):
         super().__init__(width=SCREEN_WIDTH, height=SCREEN_HEIGHT, title=SCREEN_TITLE)
         arcade.set_background_color(arcade.color.AMAZON)
-        # Client used to send events to the server and to receive GS (GameState) updates.
+
         self.client = client
         self.GS = None
         self.connection: bool = False
-        self.player_name: str = None
-        self.player_id: int = None
+        self.player_name: Optional[str] = None
+        self.player_id: Optional[int] = None
 
         # GUI Elements
         self.shapes = arcade.ShapeElementList()
@@ -117,20 +117,17 @@ class GameWindow(arcade.Window):
             # 5) Draw Cards
             self.card_tab_list.draw()
 
-            try:
-                if self.GS.started:
-                    arcade.draw_text('The game has started', SCREEN_WIDTH/4, SCREEN_HEIGHT/4, arcade.color.WHITE)
-                else:
-                    arcade.draw_text('GS.started is false', SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, arcade.color.WHITE)
-            except:
-                pass
+            if self.GS.started:
+                arcade.draw_text('The game has started', SCREEN_WIDTH/4, SCREEN_HEIGHT/4, arcade.color.WHITE)
+            else:
+                arcade.draw_text('GS.started is false', SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, arcade.color.WHITE)
 
     def generate_card_tabs(self, player_hands):
 
         # Loop through the players and generate the cards tabs GUI elements:
         for player_id in player_hands:
 
-            # If the card is in the client's hand: hide the sprite (self_card).
+            # If the card is in the networking's hand: hide the sprite (self_card).
             self_card = self.player_id == player_id
             loc = self.player_locations[player_id]
 
